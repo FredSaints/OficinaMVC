@@ -1,0 +1,46 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.RepairType>
+@{
+    ViewData["Title"] = "Types of Repairs";
+}
+
+    <h2 class="mt-4 mb-3">Types of Repairs</h2>
+
+    <div class="mb-3">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add New Type
+        </a>
+    </div>
+
+@if (!Model.Any())
+{
+        <div class="alert alert-info">No repair types defined.</div>
+}
+else
+{
+        <table class="table table-hover align-middle shadow-sm rounded">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th style="width:160px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var type in Model)
+                {
+                    <tr>
+                        <td>@type.Name</td>
+                        <td>@type.Description</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@type.Id" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@type.Id" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+}

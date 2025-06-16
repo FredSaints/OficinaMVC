@@ -6,6 +6,7 @@ namespace OficinaMVC.Helpers
 {
     public interface IUserHelper
     {
+        Task<User> GetUserByNifAsync(string nif);
         Task<User> GetUserByEmailAsync(string email);
         Task<User> GetUserByIdAsync(string userId);
         Task<IdentityResult> AddUserAsync(User user, string password);
@@ -21,5 +22,6 @@ namespace OficinaMVC.Helpers
         Task<IdentityResult> ConfirmEmailAsync(User user, string token);
         Task<string> GeneratePasswordResetTokenAsync(User user);
         Task<IdentityResult> ResetPasswordAsync(User user, string token, string password);
+        Task<List<User>> GetUsersInRoleAsync(string roleName);
     }
 }

@@ -1,9 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using MimeKit;
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using OficinaMVC.Models;
-using System;
+using MimeKit;
 
 namespace OficinaMVC.Helpers
 {

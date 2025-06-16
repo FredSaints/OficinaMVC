@@ -243,6 +243,75 @@ namespace OficinaMVC.Migrations
                     b.ToTable("Repairs");
                 });
 
+            modelBuilder.Entity("OficinaMVC.Data.Entities.RepairType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RepairTypes");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Schedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Schedules");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Specialty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Specialties");
+                });
+
             modelBuilder.Entity("OficinaMVC.Data.Entities.User", b =>
                 {
                     b.Property<string>("Id")
@@ -329,6 +398,21 @@ namespace OficinaMVC.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("OficinaMVC.Data.Entities.UserSpecialty", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("SpecialtyId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "SpecialtyId");
+
+                    b.HasIndex("SpecialtyId");
+
+                    b.ToTable("UserSpecialties");
+                });
+
             modelBuilder.Entity("OficinaMVC.Data.Entities.Vehicle", b =>
                 {
                     b.Property<int>("Id")
@@ -342,19 +426,18 @@ namespace OficinaMVC.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("FuelType")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<string>("CarModel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("FuelType")
+                        .HasColumnType("int");
 
                     b.Property<string>("LicensePlate")
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("OwnerId")
                         .IsRequired()
@@ -456,7 +539,7 @@ namespace OficinaMVC.Migrations
                     b.HasOne("OficinaMVC.Data.Entities.Vehicle", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Client");
@@ -471,10 +554,40 @@ namespace OficinaMVC.Migrations
                     b.HasOne("OficinaMVC.Data.Entities.Vehicle", "Vehicle")
                         .WithMany("Repairs")
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Schedule", b =>
+                {
+                    b.HasOne("OficinaMVC.Data.Entities.User", "User")
+                        .WithMany("Schedules")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.UserSpecialty", b =>
+                {
+                    b.HasOne("OficinaMVC.Data.Entities.Specialty", "Specialty")
+                        .WithMany("UserSpecialties")
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OficinaMVC.Data.Entities.User", "User")
+                        .WithMany("UserSpecialties")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Specialty");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("OficinaMVC.Data.Entities.Vehicle", b =>
@@ -482,7 +595,7 @@ namespace OficinaMVC.Migrations
                     b.HasOne("OficinaMVC.Data.Entities.User", "Owner")
                         .WithMany("Vehicles")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Owner");
@@ -503,9 +616,18 @@ namespace OficinaMVC.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Specialty", b =>
+                {
+                    b.Navigation("UserSpecialties");
+                });
+
             modelBuilder.Entity("OficinaMVC.Data.Entities.User", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("Schedules");
+
+                    b.Navigation("UserSpecialties");
 
                     b.Navigation("Vehicles");
                 });

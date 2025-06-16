@@ -14,10 +14,14 @@ namespace OficinaMVC.Data
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Repair> Repairs { get; set; }
+        public DbSet<Specialty> Specialties { get; set; }
+        public DbSet<UserSpecialty> UserSpecialties { get; set; }
+        public DbSet<Schedule> Schedules { get; set; }
+        public DbSet<RepairType> RepairTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.NIF)
@@ -45,8 +49,8 @@ namespace OficinaMVC.Data
                 );
 
             modelBuilder.Entity<Repair>()
-            .Property(r => r.TotalCost)
-            .HasPrecision(10, 2);
+                .Property(r => r.TotalCost)
+                .HasPrecision(10, 2);
 
             modelBuilder.Entity<Appointment>()
                 .HasOne(a => a.Client)
@@ -59,6 +63,34 @@ namespace OficinaMVC.Data
                 .WithMany()
                 .HasForeignKey(a => a.MechanicId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserSpecialty>()
+                .HasKey(us => new { us.UserId, us.SpecialtyId });
+
+            modelBuilder.Entity<UserSpecialty>()
+                .HasOne(us => us.User)
+                .WithMany(u => u.UserSpecialties)
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserSpecialty>()
+                .HasOne(us => us.Specialty)
+                .WithMany(s => s.UserSpecialties)
+                .HasForeignKey(us => us.SpecialtyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            var cascadeFKs = modelBuilder.Model
+                .GetEntityTypes()
+                .SelectMany(t => t.GetForeignKeys())
+                .Where(fk => !fk.IsOwnership && fk.DeleteBehavior == DeleteBehavior.Cascade);
+
+            foreach (var fk in cascadeFKs)
+            {
+                fk.DeleteBehavior = DeleteBehavior.Restrict;
+            }
+
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

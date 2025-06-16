@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using OficinaMVC.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OficinaMVC.Data.Entities
@@ -18,15 +19,15 @@ namespace OficinaMVC.Data.Entities
 
         [Required]
         [MaxLength(30)]
-        public string Model { get; set; }
+        public string CarModel { get; set; }
 
         [Required]
         [Display(Name = "Year")]
         public int Year { get; set; }
 
-        [MaxLength(20)]
+        [Required]
         [Display(Name = "Fuel Type")]
-        public string? FuelType { get; set; }
+        public FuelType FuelType { get; set; }
 
    
         [Required]
@@ -35,7 +36,7 @@ namespace OficinaMVC.Data.Entities
         [ForeignKey("OwnerId")]
         public User Owner { get; set; }
 
-    
-        public IEnumerable<Repair>? Repairs { get; set; }
+
+        public List<Repair> Repairs { get; set; } = new List<Repair>();
     }
 }

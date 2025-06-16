@@ -1,0 +1,24 @@
+﻿@model OficinaMVC.Data.Entities.Specialty
+@{
+    ViewData["Title"] = "Specialty Details";
+}
+
+<h2 class="mt-4 mb-3">Specialty Details</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <dl class="row mb-4">
+                    <dt class="col-4">ID</dt>
+                    <dd class="col-8">@Model.Id</dd>
+                    <dt class="col-4">Name</dt>
+                    <dd class="col-8">@Model.Name</dd>
+                </dl>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to list
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

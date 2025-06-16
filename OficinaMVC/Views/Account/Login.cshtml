@@ -9,26 +9,26 @@
         <form method="post">
             <div asp-validation-summary="ModelOnly"></div>
 
-            <div class="form-group">
-                <label asp-for="Username">Username</label>
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label"></label>
                 <input asp-for="Username" class="form-control" />
                 <span asp-validation-for="Username" class="text-warning"></span>
             </div>
 
-            <div class="form-group">
-                <label asp-for="Password">Password</label>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
                 <input asp-for="Password" type="password" class="form-control" />
                 <span asp-validation-for="Password" class="text-warning"></span>
             </div>
 
-            <div class="form-group form-check">
+            <div class="mb-3 form-check">
                 <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label">Remember Me?</label>
+                <label asp-for="RememberMe" class="form-check-label"></label>
             </div>
 
-            <div class="form-group">
-                <input type="submit" value="Login" class="btn btn-success" />
-                <a asp-action="Register" class="btn btn-primary">Register</a>
+            <div class="mb-3 d-flex">
+                <button type="submit" class="btn btn-primary me-2">Login</button>
+                <a asp-action="Register" class="btn btn-success me-2">Register</a>
                 <a asp-action="RecoverPassword" class="btn btn-link">Forgot password?</a>
             </div>
         </form>

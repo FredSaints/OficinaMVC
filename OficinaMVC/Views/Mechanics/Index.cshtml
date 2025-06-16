@@ -1,0 +1,57 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.User>
+@{
+    ViewData["Title"] = "Mechanics";
+}
+
+<h2 class="mt-4 mb-3">Mechanics</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No mechanics found.
+    </div>
+}
+else
+{
+    <table class="table table-hover align-middle shadow-sm rounded">
+        <thead class="table-light">
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>NIF</th>
+                <th>Phone</th>
+                <th style="width:120px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var mechanic in Model)
+            {
+                <tr>
+                    <td>
+                        @if (!string.IsNullOrEmpty(mechanic.ProfileImageUrl))
+                        {
+                            <img src="@mechanic.ProfileImageUrl" alt="profile"
+                                 class="rounded-circle border" style="width:38px; height:38px; object-fit:cover;">
+                        }
+                        else
+                        {
+                            <span class="d-inline-block text-secondary" style="width:38px; height:38px;">
+                                <i class="bi bi-person-circle fs-3"></i>
+                            </span>
+                        }
+                    </td>
+                    <td class="fw-semibold">@mechanic.FullName</td>
+                    <td>@mechanic.Email</td>
+                    <td>@mechanic.NIF</td>
+                    <td>@mechanic.PhoneNumber</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@mechanic.Id" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

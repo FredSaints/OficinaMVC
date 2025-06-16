@@ -11,17 +11,19 @@ namespace OficinaMVC.Helpers
         {
             string guid = Guid.NewGuid().ToString();
             string file = $"{guid}.jpg";
+            string directory = Path.Combine(Directory.GetCurrentDirectory(), $"wwwroot\\images\\{folder}");
 
-            string path = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                $"wwwroot\\images\\{folder}", file);
+            if (!Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            string path = Path.Combine(directory, file);
 
             using (FileStream stream = new FileStream(path, FileMode.Create))
             {
                 await imageFile.CopyToAsync(stream);
             }
 
-            return $"~/images/{folder}/{file}";
+            return $"/images/{folder}/{file}";
         }
     }
 }

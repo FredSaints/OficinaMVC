@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Models;
 
@@ -96,6 +97,17 @@ namespace OficinaMVC.Helpers
         public async Task<IdentityResult> ResetPasswordAsync(User user, string token, string password)
         {
             return await _userManager.ResetPasswordAsync(user, token, password);
+        }
+
+        public async Task<User> GetUserByNifAsync(string nif)
+        {
+            return await _userManager.Users.FirstOrDefaultAsync(u => u.NIF == nif);
+        }
+
+        public async Task<List<User>> GetUsersInRoleAsync(string roleName)
+        {
+            var users = await _userManager.GetUsersInRoleAsync(roleName);
+            return users.ToList();
         }
     }
 }

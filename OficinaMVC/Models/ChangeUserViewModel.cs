@@ -17,5 +17,9 @@ namespace OficinaMVC.Models
         [Phone]
         [Display(Name = "Phone Number")]
         public string PhoneNumber { get; set; }
+
+        [Display(Name = "Profile Image")]
+        public IFormFile? ProfileImage { get; set; }
+        public string? CurrentProfileImageUrl { get; set; }
     }
 }

@@ -23,11 +23,13 @@ namespace OficinaMVC.Data.Entities
         [Display(Name = "Profile Picture")]
         public string? ProfileImageUrl { get; set; }
 
-        // Navigation properties
         public ICollection<Vehicle>? Vehicles { get; set; }
         public ICollection<Appointment>? Appointments { get; set; }
 
         [Display(Name = "Full Name")]
         public string FullName => $"{FirstName} {LastName}";
+
+        public ICollection<UserSpecialty>? UserSpecialties { get; set; }
+        public ICollection<Schedule>? Schedules { get; set; }
     }
 }

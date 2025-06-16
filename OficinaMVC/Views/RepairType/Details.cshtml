@@ -1,0 +1,23 @@
+﻿@model OficinaMVC.Data.Entities.RepairType
+@{
+    ViewData["Title"] = "Repair Type Details";
+}
+
+<h2 class="mt-4 mb-3">Type of Repair Details</h2>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <dl class="row mb-4">
+                    <dt class="col-4">Name</dt>
+                    <dd class="col-8">@Model.Name</dd>
+                    <dt class="col-4">Description</dt>
+                    <dd class="col-8">@Model.Description</dd>
+                </dl>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to list
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

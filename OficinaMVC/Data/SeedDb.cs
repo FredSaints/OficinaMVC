@@ -18,9 +18,10 @@ namespace OficinaMVC.Data
         {
             // 1. Ensure roles
             await CheckRoleAsync("Admin");
-            await CheckRoleAsync("Employee");
+            await CheckRoleAsync("Receptionist");
+            await CheckRoleAsync("Mechanic");
             await CheckRoleAsync("Client");
-            await CheckRoleAsync("Anonymous");
+           // await CheckRoleAsync("Anonymous");
 
             // 2. Ensure default admin user
             var adminEmail = "admin@oficina.com";

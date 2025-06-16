@@ -29,14 +29,12 @@ namespace OficinaMVC.Models
         [Display(Name = "Phone Number")]
         public string PhoneNumber { get; set; }
 
+        [Display(Name = "Role")]
         [Required]
-        [StringLength(100, MinimumLength = 6)]
-        [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string Role { get; set; }
 
-        [Compare("Password", ErrorMessage = "The passwords do not match.")]
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirm Password")]
-        public string ConfirmPassword { get; set; }
+        [Display(Name = "Profile Image")]
+        public IFormFile? ProfileImage { get; set; }
+        public string? ProfileImageUrl { get; set; }
     }
 }
