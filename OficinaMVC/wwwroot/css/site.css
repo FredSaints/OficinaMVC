@@ -20,3 +20,9 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.btn-icon-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}

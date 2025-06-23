@@ -1,0 +1,77 @@
+﻿@model OficinaMVC.Models.Appointments.AppointmentViewModel
+@{
+    ViewData["Title"] = "Create New Appointment";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form asp-action="Create" method="post" class="card shadow-lg border-0 mt-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h2 class="mb-0 text-center">
+                    <i class="bi bi-calendar-plus me-2"></i>@ViewData["Title"]
+                </h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                <fieldset class="mb-4">
+                    <legend class="fs-5 border-bottom pb-2 mb-3">Client & Vehicle</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="ClientId" class="form-label"></label>
+                            <select asp-for="ClientId" asp-items="Model.Clients" class="form-select form-select-lg" id="ClientId"></select>
+                            <span asp-validation-for="ClientId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="VehicleId" class="form-label"></label>
+                            <select asp-for="VehicleId" asp-items="Model.Vehicles" class="form-select form-select-lg" id="VehicleId" disabled></select>
+                            <span asp-validation-for="VehicleId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend class="fs-5 border-bottom pb-2 mb-3">Service & Scheduling</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="ServiceTypeId" class="form-label"></label>
+                            <select asp-for="ServiceTypeId" asp-items="Model.ServiceTypes" class="form-select form-select-lg"></select>
+                            <span asp-validation-for="ServiceTypeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AppointmentDate" class="form-label"></label>
+                            <input asp-for="AppointmentDate" class="form-control form-control-lg" id="AppointmentDate" placeholder="Select a date and time..." />
+                            <span id="time-validation-message" class="text-danger d-block mt-1 small"></span>
+                            <span asp-validation-for="AppointmentDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="MechanicId" class="form-label"></label>
+                            <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg" id="MechanicId" disabled></select>
+                            <span asp-validation-for="MechanicId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Notes" class="form-label"></label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Add any relevant notes for the mechanic..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="card-footer bg-light text-end p-3">
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-4 me-2">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-check-circle me-1"></i> Create
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/appointmentForm.js"></script>
+}

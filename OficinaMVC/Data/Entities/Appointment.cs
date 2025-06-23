@@ -45,5 +45,8 @@ namespace OficinaMVC.Data.Entities
 
         [ForeignKey("VehicleId")]
         public Vehicle Vehicle { get; set; }
+
+        public int? RepairId { get; set; }
+        public Repair Repair { get; set; }
     }
 }

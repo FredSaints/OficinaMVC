@@ -37,7 +37,11 @@
             <div class="card-body p-4">
                 <form asp-action="Edit" method="post" autocomplete="off">
                     @Html.AntiForgeryToken()
+                    
+                    <!-- THE FIX IS HERE: Hidden fields to post back values that are not form inputs -->
                     <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="FullName" />
+                    <input type="hidden" asp-for="ProfileImageUrl" />
 
                     <!-- Specialties -->
                     <div class="mb-4">
@@ -146,7 +150,7 @@
 @section Scripts {
     <script>
         // Use vanilla JS only
-        let scheduleIndex = @Model.Schedules?.Count() ?? 0;
+        let scheduleIndex = @(Model.Schedules?.Count ?? 0);
         const daysOfWeek = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(daysOfWeek));
 
         document.getElementById('addRowBtn').addEventListener('click', function () {

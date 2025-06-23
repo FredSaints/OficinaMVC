@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 
@@ -9,10 +11,12 @@ namespace OficinaMVC.Controllers
     public class SpecialtyController : Controller
     {
         private readonly ISpecialtyRepository _specialtyRepository;
+        private readonly DataContext _context;
 
-        public SpecialtyController(ISpecialtyRepository specialtyRepository)
+        public SpecialtyController(ISpecialtyRepository specialtyRepository, DataContext context)
         {
             _specialtyRepository = specialtyRepository;
+            _context = context;
         }
 
         // GET: Specialty
@@ -72,7 +76,6 @@ namespace OficinaMVC.Controllers
             return View(specialty);
         }
 
-        // POST: Specialty/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -80,14 +83,23 @@ namespace OficinaMVC.Controllers
             var specialty = await _specialtyRepository.GetByIdAsync(id);
             if (specialty == null) return NotFound();
 
-            if (specialty.UserSpecialties != null && specialty.UserSpecialties.Any())
+            var hasReferences = await _context.UserSpecialties.AnyAsync(us => us.SpecialtyId == id);
+            if (hasReferences)
             {
                 ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more users.");
                 return View(specialty);
             }
 
-            await _specialtyRepository.DeleteAsync(specialty);
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                await _specialtyRepository.DeleteAsync(specialty);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more users.");
+                return View(specialty);
+            }
         }
     }
 }

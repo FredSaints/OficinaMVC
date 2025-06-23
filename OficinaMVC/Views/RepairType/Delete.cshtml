@@ -15,7 +15,7 @@
                     <dt class="col-4">Description</dt>
                     <dd class="col-8">@Model.Description</dd>
                 </dl>
-                <form asp-action="DeleteConfirmed" method="post">
+                <form asp-action="Delete" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="Id" />
                     <button type="submit" class="btn btn-danger me-2">

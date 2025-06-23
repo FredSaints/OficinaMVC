@@ -15,12 +15,12 @@ namespace OficinaMVC.Data.Entities
         public DateTime? EndDate { get; set; }
 
         [Required]
-        [MaxLength(100)]
+        [MaxLength(500)]
         public string Description { get; set; }
 
         [Required]
         [Display(Name = "Total Cost")]
-        [DataType(DataType.Currency)]
+        [Column(TypeName = "decimal(10, 2)")]
         public decimal TotalCost { get; set; }
 
         [Required]
@@ -29,10 +29,14 @@ namespace OficinaMVC.Data.Entities
 
         [Required]
         public int VehicleId { get; set; }
-
         [ForeignKey("VehicleId")]
         public Vehicle Vehicle { get; set; }
 
+        public int? AppointmentId { get; set; }
+        public Appointment Appointment { get; set; }
+
         public ICollection<User> Mechanics { get; set; } = new List<User>();
+
+        public ICollection<RepairPart> RepairParts { get; set; } = new List<RepairPart>();
     }
 }

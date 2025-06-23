@@ -1,47 +1,50 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OficinaMVC.Data;
-using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
+using OficinaMVC.Helpers;
 using OficinaMVC.Models.Mechanics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OficinaMVC.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class MechanicsController : Controller
     {
-        private readonly UserManager<User> _userManager;
+        private readonly IUserHelper _userHelper;
         private readonly ISpecialtyRepository _specialtyRepository;
-        private readonly DataContext _context;
+        private readonly IMechanicRepository _mechanicRepository;
 
-        public MechanicsController(UserManager<User> userManager, ISpecialtyRepository specialtyRepository, DataContext context)
+        public MechanicsController(
+            IUserHelper userHelper,
+            ISpecialtyRepository specialtyRepository,
+            IMechanicRepository mechanicRepository)
         {
-            _userManager = userManager;
+            _userHelper = userHelper;
             _specialtyRepository = specialtyRepository;
-            _context = context;
+            _mechanicRepository = mechanicRepository;
         }
 
         // GET: Mechanics
         public async Task<IActionResult> Index()
         {
-            var users = await _userManager.GetUsersInRoleAsync("Mechanic");
+            var users = await _userHelper.GetUsersInRoleAsync("Mechanic");
             return View(users);
         }
 
         // GET: Mechanics/Edit/5
         public async Task<IActionResult> Edit(string id)
         {
-            if (string.IsNullOrEmpty(id)) return NotFound();
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
 
-            var mechanic = await _context.Users
-                .Include(u => u.UserSpecialties)
-                .ThenInclude(us => us.Specialty)
-                .Include(u => u.Schedules)
-                .FirstOrDefaultAsync(u => u.Id == id);
-
-            if (mechanic == null) return NotFound();
+            var mechanic = await _mechanicRepository.GetByIdWithDetailsAsync(id);
+            if (mechanic == null)
+            {
+                return NotFound();
+            }
 
             var allSpecialties = await _specialtyRepository.GetAllAsync();
 
@@ -64,53 +67,26 @@ namespace OficinaMVC.Controllers
             return View(viewModel);
         }
 
+        // POST: Mechanics/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(MechanicEditViewModel model)
         {
-            var mechanic = await _context.Users
-                .Include(u => u.UserSpecialties)
-                .Include(u => u.Schedules)
-                .FirstOrDefaultAsync(u => u.Id == model.UserId);
-
-            if (mechanic == null) return NotFound();
-
-            // --- Update specialties ---
-            var existingSpecialtyIds = mechanic.UserSpecialties.Select(us => us.SpecialtyId).ToList();
-            var toAdd = model.SelectedSpecialtyIds.Except(existingSpecialtyIds).ToList();
-            var toRemove = existingSpecialtyIds.Except(model.SelectedSpecialtyIds).ToList();
-
-            foreach (var specialtyId in toAdd)
-                mechanic.UserSpecialties.Add(new UserSpecialty { UserId = mechanic.Id, SpecialtyId = specialtyId });
-
-            foreach (var specialtyId in toRemove)
+            if (!ModelState.IsValid)
             {
-                var userSpecialty = mechanic.UserSpecialties.FirstOrDefault(us => us.SpecialtyId == specialtyId);
-                if (userSpecialty != null)
-                    mechanic.UserSpecialties.Remove(userSpecialty);
+                model.AvailableSpecialties = (await _specialtyRepository.GetAllAsync()).ToList();
+                return View(model);
             }
 
+            var (success, errorMessage) = await _mechanicRepository.UpdateMechanicAsync(model);
 
-            if (mechanic.Schedules != null && mechanic.Schedules.Any())
+            if (!success)
             {
-                _context.Schedules.RemoveRange(mechanic.Schedules);
-            }
+                ModelState.AddModelError(string.Empty, errorMessage);
 
-            if (model.Schedules != null)
-            {
-                foreach (var sched in model.Schedules)
-                {
-                    _context.Schedules.Add(new Schedule
-                    {
-                        DayOfWeek = sched.DayOfWeek,
-                        StartTime = sched.StartTime,
-                        EndTime = sched.EndTime,
-                        UserId = mechanic.Id
-                    });
-                }
+                model.AvailableSpecialties = (await _specialtyRepository.GetAllAsync()).ToList();
+                return View(model);
             }
-
-            await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Mechanic updated successfully!";
             return RedirectToAction(nameof(Index));

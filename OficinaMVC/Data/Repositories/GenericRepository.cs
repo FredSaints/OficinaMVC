@@ -14,7 +14,7 @@ namespace OficinaMVC.Data.Repositories
 
         public IQueryable<T> GetAll() => _context.Set<T>().AsNoTracking();
 
-        public async Task<T> GetByIdAsync(int id) =>
+        public virtual async Task<T> GetByIdAsync(int id) =>
             await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
 
         public virtual async Task<IEnumerable<T>> GetAllAsync()
@@ -44,5 +44,7 @@ namespace OficinaMVC.Data.Repositories
             await _context.Set<T>().AnyAsync(e => e.Id == id);
 
         private async Task<bool> SaveAllAsync() => await _context.SaveChangesAsync() > 0;
+
+ 
     }
 }

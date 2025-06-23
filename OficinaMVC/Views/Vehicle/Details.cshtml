@@ -1,0 +1,59 @@
+﻿@model OficinaMVC.Data.Entities.Vehicle
+@{
+    ViewData["Title"] = "Vehicle Details";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h2 class="mb-0"><i class="bi bi-car-front-fill me-2"></i> @Model.LicensePlate</h2>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <div class="row">
+                        <!-- Vehicle Info Section -->
+                        <div class="col-md-6">
+                            <h4 class="border-bottom pb-2 mb-3">Vehicle Information</h4>
+                            <dl class="row">
+                                <dt class="col-sm-4">Brand</dt>
+                                <dd class="col-sm-8">@Model.CarModel.Brand.Name</dd>
+
+                                <dt class="col-sm-4">Model</dt>
+                                <dd class="col-sm-8">@Model.CarModel.Name</dd>
+
+                                <dt class="col-sm-4">Year</dt>
+                                <dd class="col-sm-8">@Model.Year</dd>
+
+                                <dt class="col-sm-4">Mileage</dt>
+                                <dd class="col-sm-8">@Model.Mileage.ToString("N0") km</dd>
+
+                                <dt class="col-sm-4">Fuel Type</dt>
+                                <dd class="col-sm-8">@Model.FuelType.ToString()</dd>
+                            </dl>
+                        </div>
+                        <!-- Owner Info Section -->
+                        <div class="col-md-6">
+                            <h4 class="border-bottom pb-2 mb-3">Owner Information</h4>
+                            <dl class="row">
+                                <dt class="col-sm-4">Name</dt>
+                                <dd class="col-sm-8">@Model.Owner.FullName</dd>
+
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">@Model.Owner.Email</dd>
+
+                                <dt class="col-sm-4">Phone</dt>
+                                <dd class="col-sm-8">@Model.Owner.PhoneNumber</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-end p-3">
+                    <a asp-action="Index" class="btn btn-secondary px-4 btn-icon-text">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

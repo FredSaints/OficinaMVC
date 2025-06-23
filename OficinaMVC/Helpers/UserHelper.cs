@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Models;
+using System.Security.Claims;
 
 namespace OficinaMVC.Helpers
 {
@@ -19,6 +20,16 @@ namespace OficinaMVC.Helpers
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+        }
+
+        public async Task<IList<string>> GetRolesAsync(User user)
+        {
+            return await _userManager.GetRolesAsync(user);
+        }
+
+        public async Task SignInWithClaimsAsync(User user, bool isPersistent, IEnumerable<Claim> claims)
+        {
+            await _signInManager.SignInWithClaimsAsync(user, isPersistent, claims);
         }
 
         public async Task<IdentityResult> AddUserAsync(User user, string password)

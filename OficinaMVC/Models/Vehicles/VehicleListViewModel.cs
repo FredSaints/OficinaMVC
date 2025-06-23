@@ -1,4 +1,5 @@
-﻿using OficinaMVC.Models.Enums;
+﻿
+using OficinaMVC.Models.Enums;
 
 namespace OficinaMVC.Models.Vehicles
 {
@@ -9,6 +10,7 @@ namespace OficinaMVC.Models.Vehicles
         public string Brand { get; set; }
         public string CarModel { get; set; }
         public int Year { get; set; }
+        public int Mileage { get; set; }
         public FuelType FuelType { get; set; }
         public string OwnerName { get; set; }
         public string OwnerEmail { get; set; }

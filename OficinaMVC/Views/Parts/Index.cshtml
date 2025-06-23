@@ -1,0 +1,70 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.Part>
+@{
+    ViewData["Title"] = "Manage Parts";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2 class="mb-0 text-primary">
+        <i class="bi bi-tools me-2"></i>@ViewData["Title"]
+    </h2>
+    <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm btn-icon-text">
+        <i class="bi bi-plus-circle"></i> Add New Part
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5">
+                <p class="lead text-muted">No parts found in inventory.</p>
+                <p>Click "Add New Part" to get started!</p>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>In Stock</th>
+                        <th class="text-end pe-4" style="width: 180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderBy(p => p.Name))
+                    {
+                        <tr>
+                            <td class="ps-4 fw-semibold">@item.Name</td>
+                            <td>@item.Description</td>
+                            <td>@item.Price.ToString("C")</td>
+                            <td>@item.StockQuantity</td>
+                            <td class="text-end pe-4">
+                                <!-- THE FIX: Apply consistent button styling -->
+                                <div class="d-inline-flex gap-1" role="group">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning btn-sm btn-icon-text" title="Edit">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm btn-icon-text" title="Delete Part">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

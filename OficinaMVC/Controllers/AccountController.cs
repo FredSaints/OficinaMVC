@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OficinaMVC.Data.Entities;
@@ -16,13 +17,15 @@ namespace OficinaMVC.Controllers
         private readonly IMailHelper _mailHelper;
         private readonly IConfiguration _configuration;
         private readonly IImageHelper _imageHelper;
+        private readonly SignInManager<User> _signInManager;
 
-        public AccountController(IUserHelper userHelper, IMailHelper mailHelper, IConfiguration configuration, IImageHelper imageHelper)
+        public AccountController(IUserHelper userHelper, IMailHelper mailHelper, IConfiguration configuration, IImageHelper imageHelper, SignInManager<User> signInManager)
         {
             _userHelper = userHelper;
             _mailHelper = mailHelper;
             _configuration = configuration;
             _imageHelper = imageHelper;
+            _signInManager = signInManager;
         }
 
         [HttpGet]
@@ -40,10 +43,36 @@ namespace OficinaMVC.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var result = await _userHelper.LoginAsync(model);
+            var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
 
             if (result.Succeeded)
-                return RedirectToAction("Index", "Home");
+            {
+                var user = await _userHelper.GetUserByEmailAsync(model.Username);
+                if (user != null)
+                {
+                    var claims = new List<Claim>
+            {
+                new Claim("FullName", user.FullName), 
+                new Claim("ProfileImageUrl", user.ProfileImageUrl ?? "/images/default-profile.png")
+            };
+
+                    var userRoles = await _userHelper.GetRolesAsync(user);
+
+                    foreach (var role in userRoles)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+
+                    await _userHelper.SignInWithClaimsAsync(user, model.RememberMe, claims);
+
+                    if (userRoles.Contains("Receptionist") || userRoles.Contains("Mechanic"))
+                    {
+                        return RedirectToAction("Index", "Dashboard");
+                    }
+
+                    return RedirectToAction("Index", "Home");
+                }
+            }
 
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             return View(model);
@@ -174,6 +203,7 @@ namespace OficinaMVC.Controllers
             var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
             if (user == null) return NotFound();
 
+            string oldImageUrl = user.ProfileImageUrl;
             if (model.ProfileImage != null)
             {
                 user.ProfileImageUrl = await _imageHelper.UploadImageAsync(model.ProfileImage, "users");
@@ -186,10 +216,20 @@ namespace OficinaMVC.Controllers
             var result = await _userHelper.UpdateUserAsync(user);
             if (result.Succeeded)
             {
-                ViewBag.Message = "Profile updated successfully.";
-                return View(model);
-            }
+                await _signInManager.RefreshSignInAsync(user);
 
+                var updatedModel = new ChangeUserViewModel
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    CurrentProfileImageUrl = user.ProfileImageUrl
+                };
+
+                ViewBag.Message = "Profile updated successfully.";
+                return View(updatedModel);
+            }
+            user.ProfileImageUrl = oldImageUrl;
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
 
@@ -349,7 +389,8 @@ namespace OficinaMVC.Controllers
                     var claims = new[]
                     {
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim("ProfileImageUrl", user.ProfileImageUrl ?? "/images/default-profile.png")
                 };
 
                     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Tokens:Key"]));

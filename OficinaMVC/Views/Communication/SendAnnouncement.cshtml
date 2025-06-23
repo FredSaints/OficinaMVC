@@ -1,0 +1,69 @@
+﻿@model OficinaMVC.Models.Communication.CommunicationViewModel
+@{
+    ViewData["Title"] = "Send Announcement to All Clients";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <form asp-action="SendAnnouncement" method="post" class="card shadow-lg border-0 mt-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h2 class="mb-0 text-center"><i class="bi bi-megaphone-fill me-2"></i>@ViewData["Title"]</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="mb-4">
+                    <label asp-for="Subject" class="form-label fs-5"></label>
+                    <input asp-for="Subject" class="form-control form-control-lg" placeholder="e.g., Important Workshop Notice" />
+                    <span asp-validation-for="Subject" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Message" class="form-label fs-5"></label>
+                    <textarea asp-for="Message" id="richTextEditor"></textarea>
+                    <span asp-validation-for="Message" class="text-danger small"></span>
+                </div>
+            </div>
+            <div class="card-footer bg-light text-end p-3">
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-4 me-2">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-send-fill me-1"></i> Send to All
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script src="https://cdn.tiny.cloud/1/fp1fr7zgyy3ssl8p8jx4z1uyl7c1bpai8kufxq5izc08f0b3/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            tinymce.init({
+                selector: '#richTextEditor',
+                height: 500,
+                menubar: false,
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                         'bold italic forecolor | alignleft aligncenter ' +
+                         'alignright alignjustify | bullist numlist outdent indent | ' +
+                         'removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+                setup: function (editor) {
+                    editor.on('change', function () {
+                        editor.save();
+                    });
+                }
+            });
+        });
+    </script>
+}

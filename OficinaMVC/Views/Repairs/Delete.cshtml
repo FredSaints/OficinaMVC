@@ -1,0 +1,32 @@
+﻿@model OficinaMVC.Data.Entities.Repair
+@{
+    ViewData["Title"] = "Cancel Repair Job";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-lg border-danger mt-4">
+            <div class="card-header bg-danger text-white py-3">
+                <h2 class="mb-0 text-center"><i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewData["Title"] #@Model.Id</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <p class="lead text-center mb-4">Are you sure you want to cancel this repair? All parts used will be returned to stock.</p>
+                <div class="bg-light p-4 rounded border">
+                    <dl class="row mb-0 fs-5">
+                        <dt class="col-sm-4 text-secondary">Vehicle:</dt>
+                        <dd class="col-sm-8">@Model.Vehicle.LicensePlate</dd>
+                        <dt class="col-sm-4 text-secondary">Owner:</dt>
+                        <dd class="col-sm-8">@Model.Vehicle.Owner.FullName</dd>
+                    </dl>
+                </div>
+                <form asp-action="Delete" method="post" class="mt-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a asp-action="Index" class="btn btn-secondary btn-lg px-4">No, Go Back</a>
+                        <button type="submit" class="btn btn-danger btn-lg px-4">Yes, Cancel Repair</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

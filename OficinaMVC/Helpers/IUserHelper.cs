@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Models;
+using System.Security.Claims;
 
 namespace OficinaMVC.Helpers
 {
@@ -23,5 +24,7 @@ namespace OficinaMVC.Helpers
         Task<string> GeneratePasswordResetTokenAsync(User user);
         Task<IdentityResult> ResetPasswordAsync(User user, string token, string password);
         Task<List<User>> GetUsersInRoleAsync(string roleName);
+        Task<IList<string>> GetRolesAsync(User user);
+        Task SignInWithClaimsAsync(User user, bool isPersistent, IEnumerable<Claim> claims);
     }
 }

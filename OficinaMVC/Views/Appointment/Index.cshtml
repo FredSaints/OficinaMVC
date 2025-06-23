@@ -1,0 +1,224 @@
+﻿@* @model IEnumerable<OficinaMVC.Data.Entities.Appointment>
+@{
+    ViewData["Title"] = "All Appointments";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2 class="mb-0 text-primary">
+        <i class="bi bi-calendar-check-fill me-2"></i>@ViewData["Title"]
+    </h2>
+    <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm btn-icon-text">
+        <i class="bi bi-plus-circle"></i> New Appointment
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5">
+                <p class="lead text-muted">No appointments found.</p>
+                <p>Click "New Appointment" to get started!</p>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 20%;">Date & Time</th>
+                        <th style="width: 18%;">Client</th>
+                        <th style="width: 15%;">Vehicle</th>
+                        <th style="width: 15%;">Service</th>
+                        <th style="width: 15%;">Mechanic</th>
+                        <th style="width: 7%;">Status</th>
+                        <th class="text-end pe-4" style="width: 150px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderByDescending(a => a.Date))
+                    {
+                        <tr>
+                            <td class="ps-4 fw-semibold">
+                                <div>@item.Date.ToString("D")</div>
+                                <div class="small text-muted">@item.Date.ToString("t")</div>
+                            </td>
+                            <td>@item.Client.FullName</td>
+                            <td>@item.Vehicle.LicensePlate</td>
+                            <td>@item.ServiceType</td>
+                            <td>@item.Mechanic.FullName</td>
+                            <td>
+                                @if (item.Status == "Completed")
+                                {
+                                    <span class="badge bg-success">@item.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">@item.Status</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <!-- THE FIX: Apply consistent button styling -->
+                                <div class="d-inline-flex gap-1" role="group">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <a asp-controller="Repairs" asp-action="StartRepairFromAppointment" asp-route-appointmentId="@item.Id" class="btn btn-success btn-sm" title="Start Repair Job">
+                                            <i class="bi bi-wrench"></i>
+                                        </a>
+                                    }
+
+                                    @if (item.RepairId != null)
+                                    {
+                                        <a asp-controller="Repairs" asp-action="Details" asp-route-id="@item.RepairId" class="btn btn-info btn-sm" title="View Repair Job">
+                                            <i class="bi bi-search"></i>
+                                        </a>
+                                    }
+
+                                    @if (item.Status != "Completed")
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning btn-sm" title="Edit Appointment">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm" title="Cancel Appointment">
+                                            <i class="bi bi-calendar-x"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div> *@
+
+
+@model IEnumerable<OficinaMVC.Data.Entities.Appointment>
+@{
+    ViewData["Title"] = "All Appointments";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2 class="mb-0 text-primary">
+        <i class="bi bi-calendar-check-fill me-2"></i>@ViewData["Title"]
+    </h2>
+    <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm btn-icon-text">
+        <i class="bi bi-plus-circle"></i> New Appointment
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5">
+                <p class="lead text-muted">No appointments found.</p>
+                <p>Click "New Appointment" to get started!</p>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 20%;">Date & Time</th>
+                        <th style="width: 18%;">Client</th>
+                        <th style="width: 15%;">Vehicle</th>
+                        <th style="width: 15%;">Service</th>
+                        <th style="width: 15%;">Mechanic</th>
+                        <th style="width: 7%;">Status</th>
+                        <th class="text-end pe-4" style="width: 320px;">Actions</th> <!-- Adjusted width for text -->
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderByDescending(a => a.Date))
+                    {
+                        <tr>
+                            <td class="ps-4 fw-semibold">
+                                <div>@item.Date.ToString("D")</div>
+                                <div class="small text-muted">@item.Date.ToString("t")</div>
+                            </td>
+                            <td>@item.Client.FullName</td>
+                            <td>@item.Vehicle.LicensePlate</td>
+                            <td>@item.ServiceType</td>
+                            <td>@item.Mechanic.FullName</td>
+                            <td>
+                                @if (item.Status == "Completed")
+                                {
+                                    <span class="badge bg-success">@item.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">@item.Status</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-inline-flex gap-1" role="group">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <a asp-controller="Repairs" asp-action="StartRepairFromAppointment" asp-route-appointmentId="@item.Id" class="btn btn-success btn-sm btn-icon-text" title="Start Repair Job">
+                                            <i class="bi bi-wrench"></i> Start
+                                        </a>
+                                    }
+
+                                    @if (item.RepairId != null)
+                                    {
+                                        <a asp-controller="Repairs" asp-action="Details" asp-route-id="@item.RepairId" class="btn btn-info btn-sm btn-icon-text" title="View Repair Job">
+                                            <i class="bi bi-search"></i> View
+                                        </a>
+                                    }
+
+                                    @if (item.Status != "Completed")
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning btn-sm btn-icon-text" title="Edit Appointment">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm btn-icon-text" title="Cancel Appointment">
+                                            <i class="bi bi-calendar-x"></i> Cancel
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+

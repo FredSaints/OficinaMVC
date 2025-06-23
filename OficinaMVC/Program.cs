@@ -1,9 +1,12 @@
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
+using OficinaMVC.Services;
 
 internal class Program
 {
@@ -46,16 +49,40 @@ internal class Program
                 };
             });
 
+        // --- HANGFIRE SERVICE CONFIGURATION ---
+        builder.Services.AddHangfire(configuration => configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+            {
+                CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                QueuePollInterval = TimeSpan.Zero,
+                UseRecommendedIsolationLevel = true,
+                DisableGlobalLocks = true
+            }));
+
+        builder.Services.AddHangfireServer();
+
+
         //Register services
         builder.Services.AddControllersWithViews();
-        builder.Services.AddScoped<IWorkshopRepository, WorkshopRepository>();
         builder.Services.AddTransient<SeedDb>();
         builder.Services.AddScoped<IUserHelper, UserHelper>();
         builder.Services.AddScoped<IMailHelper, MailHelper>();
         builder.Services.AddScoped<IImageHelper, ImageHelper>();
         builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+        builder.Services.AddScoped<IMechanicRepository, MechanicRepository>();
         builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
         builder.Services.AddScoped<IRepairTypeRepository, RepairTypeRepository>();
+        builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+        builder.Services.AddScoped<ICarModelRepository, CarModelRepository>();
+        builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+        builder.Services.AddScoped<IPartRepository, PartRepository>();
+        builder.Services.AddScoped<IRepairRepository, RepairRepository>();
+        builder.Services.AddScoped<IReminderService, ReminderService>();
+
         var app = builder.Build();
 
         //Seeding
@@ -76,6 +103,11 @@ internal class Program
         app.UseHttpsRedirection();
         app.UseStaticFiles();
 
+        // --- HANGFIRE DASHBOARD MIDDLEWARE ---
+        app.UseHangfireDashboard("/hangfire", new DashboardOptions
+        {
+        });
+
         app.UseRouting();
 
         app.UseAuthentication();
@@ -84,6 +116,18 @@ internal class Program
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
+
+        app.MapHangfireDashboard();
+
+
+        RecurringJob.AddOrUpdate<IReminderService>(
+    "daily-appointment-reminders",
+    service => service.SendAppointmentReminders(),
+    "0 7 * * *",
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time")
+    });
 
         app.Run();
     }

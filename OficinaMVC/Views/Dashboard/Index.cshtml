@@ -1,0 +1,118 @@
+﻿@model OficinaMVC.Models.Dashboard.DashboardViewModel
+@{
+    ViewData["Title"] = "Workshop Dashboard";
+}
+
+<div class="container-fluid py-4">
+    <h1 class="display-5 fw-bold">@ViewData["Title"]</h1>
+    <p class="text-muted">Welcome! Here's your overview for today, @DateTime.Now.ToString("dddd, MMMM dd").</p>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary shadow-lg h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-check-fill fs-1"></i>
+                    <h1 class="display-4 fw-bold my-2">@Model.AppointmentsTodayCount</h1>
+                    <p class="lead mb-0">Appointments Today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning shadow-lg h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-wrench-adjustable-circle-fill fs-1"></i>
+                    <h1 class="display-4 fw-bold my-2">@Model.OngoingRepairsCount</h1>
+                    <p class="lead mb-0">Ongoing Repairs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white @(Model.LowStockPartsCount > 0 ? "bg-danger" : "bg-success") shadow-lg h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-tools fs-1"></i>
+                    <h1 class="display-4 fw-bold my-2">@Model.LowStockPartsCount</h1>
+                    <p class="lead mb-0">Parts Low on Stock</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Today's Appointments List -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-list-task me-2"></i>Today's Schedule</h4>
+                </div>
+                <div class="card-body">
+                    @if (!Model.TodaysAppointments.Any())
+                    {
+                        <p class="text-muted text-center mt-3">No appointments scheduled for today.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var appt in Model.TodaysAppointments)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold fs-5">@appt.AppointmentTime.ToString("t") - @appt.ServiceType</div>
+                                        <span>@appt.ClientName - @appt.VehicleInfo</span>
+                                        <div class="small text-muted">Mechanic: @appt.MechanicName</div>
+                                    </div>
+                                    <a asp-controller="Appointment" asp-action="Edit" asp-route-id="@appt.Id" class="btn btn-sm btn-outline-secondary">View</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Chart -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i>Appointments This Week</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="appointmentsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx = document.getElementById('appointmentsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AppointmentsChartData.Labels)),
+                    datasets: [{
+                        label: 'Appointments',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AppointmentsChartData.Data)),
+                        backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 11
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        });
+    </script>
+}

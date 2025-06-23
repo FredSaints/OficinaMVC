@@ -1,28 +1,44 @@
-﻿@model IEnumerable<OficinaMVC.Data.Entities.Vehicle>
-@using OficinaMVC.Models.Enums
+﻿@model IEnumerable<OficinaMVC.Models.Vehicles.VehicleListViewModel>
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<OficinaMVC.Data.Entities.User> UserManager
 
 @{
     ViewData["Title"] = "Vehicles";
-    bool canEdit = User.IsInRole("Mechanic") || User.IsInRole("Receptionist");
+    bool canAdminister = User.IsInRole("Mechanic") || User.IsInRole("Receptionist");
 }
 
-<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-    <h2 class="mb-0"><i class="bi bi-car-front me-2"></i>Vehicles</h2>
-    @if (canEdit)
-    {
-        <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm">
-            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
-        </a>
-    }
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-4 mb-3 gap-3">
+    <h2 class="mb-0 text-primary me-auto"><i class="bi bi-car-front me-2"></i>Vehicles</h2>
+    <div class="d-flex align-items-center gap-2">
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <div class="input-group">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search by Plate..." />
+                <button type="submit" class="btn btn-outline-secondary" title="Search"><i class="bi bi-search"></i></button>
+            </div>
+            @if (ViewData["CurrentFilter"] != null)
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Clear Filter"><i class="bi bi-x-lg"></i></a>
+            }
+        </form>
+        @if (canAdminister)
+        {
+            <a asp-action="Create" class="btn btn-primary shadow-sm btn-icon-text"><i class="bi bi-plus-circle"></i> Add Vehicle</a>
+        }
+    </div>
 </div>
 
 @if (!Model.Any())
 {
     <div class="alert alert-info d-flex align-items-center gap-2 mt-4">
         <i class="bi bi-info-circle text-primary fs-4"></i>
-        <span>No vehicles found.</span>
+        @if (ViewData["CurrentFilter"] != null)
+        {
+            <span>No vehicles found matching your criteria.</span>
+        }
+        else
+        {
+            <span>No vehicles found. Click "Add Vehicle" to get started!</span>
+        }
     </div>
 }
 else
@@ -32,72 +48,59 @@ else
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Plate</th>
+                        <th class="ps-4">Plate</th>
                         <th>Brand</th>
                         <th>Model</th>
                         <th>Year</th>
-                        <th>Fuel</th>
+                        <th>Mileage</th>
                         <th>Owner</th>
-                        <th style="width:190px"></th>
+                        <th class="text-end pe-4" style="width: 350px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var v in Model)
                     {
                         <tr>
-                            <td class="fw-bold text-secondary">@v.Id</td>
-                            <td class="fw-bold">@v.LicensePlate</td>
+                            <td class="ps-4 fw-bold">@v.LicensePlate</td>
                             <td>@v.Brand</td>
                             <td>@v.CarModel</td>
                             <td>@v.Year</td>
+                            <td>@v.Mileage.ToString("N0") km</td>
                             <td>
-                                @switch (v.FuelType)
+                                @if (!string.IsNullOrEmpty(v.OwnerName))
                                 {
-                                    case FuelType.Gasoline:
-                                        <span class="badge bg-primary">Petrol</span>
-                                        ; break;
-                                    case FuelType.Diesel:
-
-                                        <span class="badge bg-dark">Diesel</span>
-                                        ; break;
-                                    case FuelType.Electric:
-
-                                        <span class="badge bg-success">Electric</span>
-                                        ; break;
-                                    case FuelType.Hybrid:
-
-                                        <span class="badge bg-warning text-dark">Hybrid</span>
-                                        ; break;
-                                    default:
-
-                                        <span class="badge bg-secondary">Other</span>
-                                        ; break;
-                                }
-                            </td>
-                            <td>
-                                @if (v.Owner != null)
-                                {
-                                    <span title="@v.Owner.Email">@v.Owner.FullName</span>
+                                    <span title="@v.OwnerEmail">@v.OwnerName</span>
                                 }
                                 else
                                 {
+
                                     <span class="text-muted">N/A</span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@v.Id" class="btn btn-outline-info btn-sm me-1">
-                                    <i class="bi bi-eye"></i> Details
-                                </a>
-                                @if (canEdit)
-                                {
-                                    <a asp-action="Edit" asp-route-id="@v.Id" class="btn btn-outline-warning btn-sm me-1">
-                                        <i class="bi bi-pencil"></i> Edit
+                            <td class="text-end pe-4">
+                                <div class="d-inline-flex gap-1" role="group">
+                                    <a asp-action="Details" asp-route-id="@v.Id" class="btn btn-outline-info btn-sm btn-icon-text">
+                                        <i class="bi bi-search"></i> Details
                                     </a>
-                                    <a asp-action="Delete" asp-route-id="@v.Id" class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-trash"></i> Delete
+
+                                    <a href="#" class="btn btn-outline-secondary btn-sm btn-icon-text" disabled title="History coming soon">
+                                        <i class="bi bi-clock-history"></i> History
                                     </a>
-                                }
+
+                                    @if (canAdminister || User.IsInRole("Client"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@v.Id" class="btn btn-outline-warning btn-sm btn-icon-text">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    }
+
+                                    @if (canAdminister)
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@v.Id" class="btn btn-outline-danger btn-sm btn-icon-text">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

@@ -1,0 +1,52 @@
+﻿@model OficinaMVC.Data.Entities.Part
+@{
+    ViewData["Title"] = "Add New Part";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <form asp-action="Create" method="post" class="card shadow-lg border-0 mt-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h2 class="mb-0 text-center"><i class="bi bi-plus-circle me-2"></i>@ViewData["Title"]</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control form-control-lg" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Price" class="form-label"></label>
+                        <input asp-for="Price" class="form-control form-control-lg" type="number" step="0.01" />
+                        <span asp-validation-for="Price" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="StockQuantity" class="form-label"></label>
+                        <input asp-for="StockQuantity" class="form-control form-control-lg" type="number" />
+                        <span asp-validation-for="StockQuantity" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light text-end p-3">
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-4 me-2">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg px-5">Create Part</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}
