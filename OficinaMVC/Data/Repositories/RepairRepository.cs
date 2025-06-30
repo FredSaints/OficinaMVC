@@ -12,6 +12,33 @@ namespace OficinaMVC.Data.Repositories
             _context = context;
         }
 
+        public async Task UpdateMechanicsForRepairAsync(int repairId, List<string> mechanicIds)
+        {
+            var repair = await _context.Repairs
+                .Include(r => r.Mechanics)
+                .FirstOrDefaultAsync(r => r.Id == repairId);
+
+            if (repair == null)
+            {
+                return;
+            }
+
+            repair.Mechanics.Clear();
+
+            if (mechanicIds != null && mechanicIds.Any())
+            {
+                var selectedMechanics = await _context.Users
+                    .Where(u => mechanicIds.Contains(u.Id))
+                    .ToListAsync();
+
+                foreach (var mechanic in selectedMechanics)
+                {
+                    repair.Mechanics.Add(mechanic);
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<Repair> CreateRepairFromAppointmentAsync(int appointmentId)
         {
             var appointment = await _context.Appointments

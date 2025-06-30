@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Data.Repositories;
+using OficinaMVC.Helpers;
 
 namespace OficinaMVC.Controllers
 {
@@ -12,18 +14,54 @@ namespace OficinaMVC.Controllers
         private readonly IRepairRepository _repairRepository;
         private readonly IPartRepository _partRepository;
         private readonly DataContext _context;
+        private readonly IUserHelper _userHelper;
 
-        public RepairsController(IRepairRepository repairRepository, IPartRepository partRepository, DataContext dataContext)
+        public RepairsController(IRepairRepository repairRepository,
+                                 IPartRepository partRepository,
+                                 DataContext dataContext,
+                                 IUserHelper userHelper)
         {
             _repairRepository = repairRepository;
             _partRepository = partRepository;
             _context = dataContext;
+            _userHelper = userHelper;
         }
 
-        // GET: Repairs
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string status, string clientName, DateTime? startDate, DateTime? endDate)
         {
-            var repairs = await _repairRepository.GetAllWithDetailsAsync();
+            var query = _context.Repairs
+                .Include(r => r.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
+                .Include(r => r.Vehicle).ThenInclude(v => v.Owner)
+                .AsQueryable();
+
+            var effectiveStatus = status ?? "Ongoing";
+
+            if (effectiveStatus != "All")
+            {
+                query = query.Where(r => r.Status == effectiveStatus);
+            }
+
+            if (!string.IsNullOrEmpty(clientName))
+            {
+                query = query.Where(r => (r.Vehicle.Owner.FirstName + " " + r.Vehicle.Owner.LastName).Contains(clientName));
+            }
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(r => r.StartDate.Date >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(r => r.StartDate.Date <= endDate.Value.Date);
+            }
+
+            ViewData["CurrentStatus"] = status;
+            ViewData["CurrentClientName"] = clientName;
+            ViewData["CurrentStartDate"] = startDate?.ToString("yyyy-MM-dd");
+            ViewData["CurrentEndDate"] = endDate?.ToString("yyyy-MM-dd");
+
+            var repairs = await query.OrderByDescending(r => r.StartDate).ToListAsync();
             return View(repairs);
         }
 
@@ -41,6 +79,10 @@ namespace OficinaMVC.Controllers
                 TempData["ErrorMessage"] = "Cannot edit a completed repair. View details instead.";
                 return RedirectToAction("Details", new { id = id });
             }
+            var allMechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
+            var currentlySelectedIds = repair.Mechanics.Select(m => m.Id).ToList();
+
+            ViewBag.AllMechanics = new MultiSelectList(allMechanics.OrderBy(u => u.FullName), "Id", "FullName", currentlySelectedIds);
 
             return View(repair);
         }
@@ -169,6 +211,15 @@ namespace OficinaMVC.Controllers
             await _repairRepository.DeleteRepairAndReturnPartsToStockAsync(id);
             TempData["SuccessMessage"] = "Repair has been cancelled and parts returned to stock.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateMechanics(int repairId, List<string> selectedMechanicIds)
+        {
+            await _repairRepository.UpdateMechanicsForRepairAsync(repairId, selectedMechanicIds);
+            TempData["SuccessMessage"] = "Assigned mechanics have been updated.";
+            return RedirectToAction("Edit", new { id = repairId });
         }
     }
 }

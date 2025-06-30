@@ -7,10 +7,14 @@ using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
 using OficinaMVC.Models.Appointments;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OficinaMVC.Controllers
 {
-    [Authorize(Roles = "Receptionist")]
+    [Authorize]
     public class AppointmentController : Controller
     {
         private readonly IAppointmentRepository _appointmentRepo;
@@ -34,18 +38,50 @@ namespace OficinaMVC.Controllers
         }
 
         // GET: Appointment/Index
-        public async Task<IActionResult> Index()
+        [Authorize(Roles = "Receptionist,Mechanic")]
+        public async Task<IActionResult> Index(DateTime? filterDate, string status, string mechanicId)
         {
-            var appointments = await _appointmentRepo.GetAll()
+            IQueryable<Appointment> query = _appointmentRepo.GetAll()
                 .Include(a => a.Client)
                 .Include(a => a.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
-                .Include(a => a.Mechanic)
-                .ToListAsync();
+                .Include(a => a.Mechanic);
 
+            if (User.IsInRole("Mechanic"))
+            {
+                var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+                query = query.Where(a => a.MechanicId == user.Id);
+            }
+
+            var effectiveStatus = status ?? "Pending";
+
+            if (effectiveStatus != "All")
+            {
+                query = query.Where(a => a.Status == effectiveStatus);
+            }
+
+            if (filterDate.HasValue)
+            {
+                query = query.Where(a => a.Date.Date == filterDate.Value.Date);
+            }
+
+            if (!User.IsInRole("Mechanic") && !string.IsNullOrEmpty(mechanicId))
+            {
+                query = query.Where(a => a.MechanicId == mechanicId);
+            }
+
+            ViewData["CurrentFilterDate"] = filterDate?.ToString("yyyy-MM-dd");
+            ViewData["CurrentStatus"] = status;
+            ViewData["CurrentMechanicId"] = mechanicId;
+
+            var mechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
+            ViewData["MechanicList"] = new SelectList(mechanics.OrderBy(m => m.FullName), "Id", "FullName", mechanicId);
+
+            var appointments = await query.OrderByDescending(a => a.Date).ToListAsync();
             return View(appointments);
         }
 
         // GET: Appointment/Create
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> Create()
         {
             var model = new AppointmentViewModel
@@ -59,27 +95,27 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
-        // Post: Appointment/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> Create(AppointmentViewModel model)
         {
             ModelState.Remove("ClientName");
             ModelState.Remove("VehicleInfo");
-
             ModelState.Remove("Clients");
             ModelState.Remove("Vehicles");
             ModelState.Remove("ServiceTypes");
             ModelState.Remove("Mechanics");
 
+            if (model.AppointmentDate < DateTime.Now)
+            {
+                ModelState.AddModelError("AppointmentDate", "Cannot book an appointment in the past.");
+            }
+
             if (ModelState.IsValid)
             {
                 var serviceType = await _repairTypeRepo.GetByIdAsync(model.ServiceTypeId);
-                if (serviceType == null)
-                {
-                    ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
-                }
-                else
+                if (serviceType != null)
                 {
                     var appointment = new Appointment
                     {
@@ -91,18 +127,17 @@ namespace OficinaMVC.Controllers
                         Notes = model.Notes,
                         Status = "Pending"
                     };
-
                     await _appointmentRepo.CreateAsync(appointment);
-
                     TempData["SuccessMessage"] = "Appointment created successfully!";
                     return RedirectToAction(nameof(Index));
                 }
+                ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
             }
             await RepopulateDropdowns(model);
             return View(model);
         }
 
-        // GET: Appointment/Edit/5
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> Edit(int id)
         {
             var appointment = await _appointmentRepo.GetAll()
@@ -110,10 +145,7 @@ namespace OficinaMVC.Controllers
                 .Include(a => a.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
                 .FirstOrDefaultAsync(a => a.Id == id);
 
-            if (appointment == null)
-            {
-                return NotFound();
-            }
+            if (appointment == null) return NotFound();
 
             if (appointment.Status == "Completed")
             {
@@ -122,7 +154,6 @@ namespace OficinaMVC.Controllers
             }
 
             var serviceType = await _repairTypeRepo.GetAll().FirstOrDefaultAsync(rt => rt.Name == appointment.ServiceType);
-
             var model = new AppointmentViewModel
             {
                 Id = appointment.Id,
@@ -132,26 +163,20 @@ namespace OficinaMVC.Controllers
                 AppointmentDate = appointment.Date,
                 MechanicId = appointment.MechanicId,
                 Notes = appointment.Notes,
-
                 ClientName = appointment.Client.FullName,
                 VehicleInfo = $"{appointment.Vehicle.LicensePlate} ({appointment.Vehicle.CarModel.Brand.Name} {appointment.Vehicle.CarModel.Name})"
             };
-
             model.ServiceTypes = await GetServiceTypeSelectListAsync();
             model.Mechanics = await GetMechanicSelectListForEdit(model.AppointmentDate, model.MechanicId);
-
             return View(model);
         }
 
-        // Post: Appointment/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> Edit(int id, AppointmentViewModel model)
         {
-            if (id != model.Id)
-            {
-                return NotFound();
-            }
+            if (id != model.Id) return NotFound();
 
             ModelState.Remove("ClientId");
             ModelState.Remove("VehicleId");
@@ -166,86 +191,67 @@ namespace OficinaMVC.Controllers
             {
                 var appointmentToUpdate = await _appointmentRepo.GetByIdAsync(id);
                 if (appointmentToUpdate == null) return NotFound();
-
                 var serviceType = await _repairTypeRepo.GetByIdAsync(model.ServiceTypeId);
-                if (serviceType == null)
-                {
-                    ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
-                }
-                else
+                if (serviceType != null)
                 {
                     appointmentToUpdate.Date = model.AppointmentDate;
                     appointmentToUpdate.MechanicId = model.MechanicId;
                     appointmentToUpdate.Notes = model.Notes;
                     appointmentToUpdate.ServiceType = serviceType.Name;
-
                     await _appointmentRepo.UpdateAsync(appointmentToUpdate);
-                    
                     TempData["SuccessMessage"] = "Appointment updated successfully!";
                     return RedirectToAction(nameof(Index));
                 }
+                ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
             }
 
             var originalAppointment = await _appointmentRepo.GetAll()
                 .Include(a => a.Client)
                 .Include(a => a.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == model.Id);
-
+                .AsNoTracking().FirstOrDefaultAsync(a => a.Id == model.Id);
             if (originalAppointment != null)
             {
                 model.ClientName = originalAppointment.Client.FullName;
                 model.VehicleInfo = $"{originalAppointment.Vehicle.LicensePlate} ({originalAppointment.Vehicle.CarModel.Brand.Name} {originalAppointment.Vehicle.CarModel.Name})";
             }
-
             model.ServiceTypes = await GetServiceTypeSelectListAsync();
             model.Mechanics = await GetMechanicSelectListForEdit(model.AppointmentDate, model.MechanicId);
-
             return View(model);
         }
 
-        // GET: Appointment/Delete/5
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> Delete(int id)
         {
             var appointment = await _appointmentRepo.GetAll()
-                .Include(a => a.Client)
-                .Include(a => a.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
-                .Include(a => a.Mechanic)
-                .FirstOrDefaultAsync(a => a.Id == id);
+               .Include(a => a.Client)
+               .Include(a => a.Vehicle).ThenInclude(v => v.CarModel).ThenInclude(cm => cm.Brand)
+               .Include(a => a.Mechanic)
+               .FirstOrDefaultAsync(a => a.Id == id);
 
-            if (appointment == null)
-            {
-                return NotFound();
-            }
-
+            if (appointment == null) return NotFound();
             if (appointment.Status == "Completed")
             {
                 TempData["ErrorMessage"] = "Cannot cancel a completed appointment.";
                 return RedirectToAction(nameof(Index));
             }
-
             return View(appointment);
         }
 
-        // POST: Appointment/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var appointment = await _appointmentRepo.GetByIdAsync(id);
-            if (appointment == null)
+            if (appointment != null)
             {
-                return NotFound();
+                await _appointmentRepo.DeleteAsync(appointment);
+                TempData["SuccessMessage"] = "Appointment has been successfully cancelled.";
             }
-
-            await _appointmentRepo.DeleteAsync(appointment);
-            TempData["SuccessMessage"] = "Appointment has been successfully cancelled.";
             return RedirectToAction(nameof(Index));
         }
 
-
         #region Private Helper Methods
-
         private async Task<IEnumerable<SelectListItem>> GetClientSelectListAsync()
         {
             var clients = await _userHelper.GetUsersInRoleAsync("Client");
@@ -279,7 +285,6 @@ namespace OficinaMVC.Controllers
                 Text = m.FullName,
                 Selected = m.Id == currentMechanicId
             }).OrderBy(t => t.Text).ToList();
-
             list.Insert(0, new SelectListItem { Value = "", Text = "Select an available mechanic..." });
             return list;
         }
@@ -303,12 +308,11 @@ namespace OficinaMVC.Controllers
             }
             model.Mechanics = new SelectList(Enumerable.Empty<SelectListItem>());
         }
-
         #endregion
 
         #region API Methods for AJAX calls
-
         [HttpGet]
+        [Authorize(Roles = "Receptionist")]
         public async Task<JsonResult> GetVehiclesByClient(string clientId)
         {
             if (string.IsNullOrEmpty(clientId))
@@ -325,12 +329,10 @@ namespace OficinaMVC.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Receptionist")]
         public async Task<JsonResult> GetAvailableMechanics(DateTime appointmentDate)
         {
-            if (appointmentDate < DateTime.Now)
-            {
-                return Json(new List<SelectListItem>());
-            }
+            if (appointmentDate.Date < DateTime.Today) return Json(new List<SelectListItem>());
 
             DayOfWeek dayOfWeek = appointmentDate.DayOfWeek;
             TimeSpan appointmentTime = appointmentDate.TimeOfDay;
@@ -339,10 +341,9 @@ namespace OficinaMVC.Controllers
             var mechanicIds = allMechanics.Select(m => m.Id).ToList();
 
             var busyMechanicIds = await _appointmentRepo.GetAll()
-                .Where(a => a.Date.Date == appointmentDate.Date)
+                .Where(a => a.Date.Date == appointmentDate.Date && a.Status == "Pending")
                 .Select(a => a.MechanicId)
-                .Distinct()
-                .ToListAsync();
+                .Distinct().ToListAsync();
 
             var relevantSchedules = await _context.Schedules
                 .Where(s => mechanicIds.Contains(s.UserId) && s.DayOfWeek == dayOfWeek)
@@ -350,14 +351,8 @@ namespace OficinaMVC.Controllers
 
             var availableMechanics = allMechanics.Where(mechanic =>
             {
-                if (busyMechanicIds.Contains(mechanic.Id))
-                {
-                    return false;
-                }
-                bool isScheduled = relevantSchedules
-                    .Any(s => s.UserId == mechanic.Id && appointmentTime >= s.StartTime && appointmentTime < s.EndTime);
-                return isScheduled;
-
+                if (busyMechanicIds.Contains(mechanic.Id)) return false;
+                return relevantSchedules.Any(s => s.UserId == mechanic.Id && appointmentTime >= s.StartTime && appointmentTime < s.EndTime);
             }).ToList();
 
             var mechanicList = availableMechanics.Select(m => new SelectListItem
@@ -370,35 +365,29 @@ namespace OficinaMVC.Controllers
             {
                 mechanicList.Insert(0, new SelectListItem { Value = "", Text = "Select an available mechanic..." });
             }
-
             return Json(mechanicList);
         }
 
         [HttpGet]
+        [Authorize(Roles = "Receptionist")]
         public async Task<JsonResult> GetUnavailableDays(int year, int month)
         {
             var startDate = new DateTime(year, month, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1);
             var allDaysInMonth = Enumerable.Range(1, endDate.Day)
-                                           .Select(day => new DateTime(year, month, day))
-                                           .ToList();
+                .Select(day => new DateTime(year, month, day)).ToList();
 
             var allSchedules = await _context.Schedules.AsNoTracking().ToListAsync();
-            if (!allSchedules.Any())
-            {
-                return Json(allDaysInMonth.Select(d => d.ToString("yyyy-MM-dd")));
-            }
+            if (!allSchedules.Any()) return Json(allDaysInMonth.Select(d => d.ToString("yyyy-MM-dd")));
 
             var workingDaysOfWeek = allSchedules.Select(s => s.DayOfWeek).Distinct().ToList();
 
             var appointmentsInMonth = await _appointmentRepo.GetAll()
                 .Where(a => a.Date.Year == year && a.Date.Month == month)
                 .GroupBy(a => a.Date.Date)
-                .Select(g => new { Date = g.Key, Count = g.Count() })
-                .ToListAsync();
+                .Select(g => new { Date = g.Key, Count = g.Count() }).ToListAsync();
 
             var allMechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
-
             var unavailableDays = new List<string>();
 
             foreach (var day in allDaysInMonth)
@@ -408,17 +397,14 @@ namespace OficinaMVC.Controllers
                     unavailableDays.Add(day.ToString("yyyy-MM-dd"));
                     continue;
                 }
-
                 var appointmentsOnDay = appointmentsInMonth.FirstOrDefault(a => a.Date == day.Date);
                 if (appointmentsOnDay != null && appointmentsOnDay.Count >= allMechanics.Count)
                 {
                     unavailableDays.Add(day.ToString("yyyy-MM-dd"));
                 }
             }
-
             return Json(unavailableDays);
         }
-
         #endregion
     }
 }

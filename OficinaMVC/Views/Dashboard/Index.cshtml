@@ -1,4 +1,4 @@
-﻿@model OficinaMVC.Models.Dashboard.DashboardViewModel
+﻿@* @model OficinaMVC.Models.Dashboard.DashboardViewModel
 @{
     ViewData["Title"] = "Workshop Dashboard";
 }
@@ -113,6 +113,178 @@
                     maintainAspectRatio: false
                 }
             });
+        });
+    </script>
+} *@
+@inject OficinaMVC.Helpers.IUserHelper UserHelper
+@model OficinaMVC.Models.Dashboard.DashboardViewModel
+@{
+    ViewData["Title"] = "Workshop Dashboard";
+    var user = await UserHelper.GetUserByEmailAsync(User.Identity.Name);
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-5 fw-bold mb-0">@ViewData["Title"]</h1>
+            <p class="text-muted fs-5">Welcome, @user.FullName! Here is your overview for @DateTime.Now.ToString("dddd, MMMM dd").</p>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card text-white bg-primary shadow-lg h-100">
+                <div class="card-body d-flex justify-content-between align-items-center p-4">
+                    <div>
+                        <h1 class="display-4 fw-bold">@Model.AppointmentsTodayCount</h1>
+                        <p class="lead mb-0">Appointments Today</p>
+                    </div>
+                    <i class="bi bi-calendar-check-fill opacity-50" style="font-size: 4rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="card text-white bg-warning shadow-lg h-100">
+                <div class="card-body d-flex justify-content-between align-items-center p-4">
+                    <div>
+                        <h1 class="display-4 fw-bold">@Model.OngoingRepairsCount</h1>
+                        <p class="lead mb-0">Ongoing Repairs</p>
+                    </div>
+                    <i class="bi bi-wrench-adjustable-circle-fill opacity-50" style="font-size: 4rem;"></i>
+                </div>
+            </div>
+        </div>
+        @if (User.IsInRole("Receptionist"))
+        {
+            <div class="col-lg-4 col-md-12">
+                <div class="card text-white @(Model.LowStockPartsCount > 0 ? "bg-danger" : "bg-success") shadow-lg h-100">
+                    <div class="card-body d-flex justify-content-between align-items-center p-4">
+                        <div>
+                            <h1 class="display-4 fw-bold">@Model.LowStockPartsCount</h1>
+                            <p class="lead mb-0">Parts Low on Stock</p>
+                        </div>
+                        <i class="bi bi-tools opacity-50" style="font-size: 4rem;"></i>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <!-- Today's Schedule -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-list-task me-2"></i>Today's Schedule</h4>
+                    <span class="badge bg-primary rounded-pill">@Model.TodaysAppointments.Count()</span>
+                </div>
+                <div class="card-body">
+                    @if (!Model.TodaysAppointments.Any())
+                    {
+                        <div class="text-center p-5">
+                            <i class="bi bi-cup-hot-fill fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No appointments scheduled for today. Enjoy the quiet!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var appt in Model.TodaysAppointments)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold fs-5">@appt.AppointmentTime.ToString("t") - @appt.ServiceType</div>
+                                        <span>@appt.ClientName - @appt.VehicleInfo</span>
+                                        <div class="small text-muted">Assigned: @appt.MechanicName</div>
+                                    </div>
+                                    @if (appt.RepairId.HasValue)
+                                    {
+                                        <a asp-controller="Repairs" asp-action="Details" asp-route-id="@appt.RepairId" class="btn btn-sm btn-outline-info btn-icon-text">
+                                            <i class="bi bi-search"></i> View Repair
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Repairs" asp-action="StartRepairFromAppointment" asp-route-appointmentId="@appt.Id" class="btn btn-sm btn-success btn-icon-text">
+                                            <i class="bi bi-wrench"></i> Start Repair
+                                        </a>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Ongoing Repairs List -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>Currently in Workshop</h4>
+                    <span class="badge bg-warning text-dark rounded-pill">@Model.OngoingRepairs.Count()</span>
+                </div>
+                <div class="card-body">
+                    @if (!Model.OngoingRepairs.Any())
+                    {
+                        <div class="text-center p-5">
+                            <i class="bi bi-car-front-fill fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No repairs are currently in progress.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var repair in Model.OngoingRepairs)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">@repair.LicensePlate (@repair.VehicleDescription)</div>
+                                        <div class="small text-muted">Client: @repair.ClientName | Started: @repair.StartDate.ToString("g")</div>
+                                    </div>
+                                    <a asp-controller="Repairs" asp-action="Edit" asp-route-id="@repair.RepairId" class="btn btn-sm btn-outline-warning">Manage</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <!-- Low Stock Alerts (Receptionist only) -->
+        @if (User.IsInRole("Receptionist") && Model.LowStockParts.Any())
+        {
+            <div class="col-12">
+                 <div class="card shadow-sm h-100 border-danger border-2">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Urgent: Low Stock Items</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var part in Model.LowStockParts)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="fw-bold">@part.PartName</div>
+                                    <div>
+                                        <span class="badge bg-danger rounded-pill">Only @part.StockQuantity left</span>
+                                        <a asp-controller="Parts" asp-action="Edit" asp-route-id="@part.PartId" class="btn btn-sm btn-outline-secondary ms-2">Restock</a>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Your existing chart script can go here if you want to add one back.
+            // For now, focusing on the lists as they are more actionable.
         });
     </script>
 }

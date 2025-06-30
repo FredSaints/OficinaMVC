@@ -13,11 +13,13 @@ namespace OficinaMVC.Models.Appointments
         public IEnumerable<SelectListItem> Clients { get; set; }
 
         [Required(ErrorMessage = "Please select a vehicle.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a valid vehicle.")]
         [Display(Name = "Vehicle")]
         public int VehicleId { get; set; }
         public IEnumerable<SelectListItem> Vehicles { get; set; }
 
         [Required(ErrorMessage = "Please select a service type.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a valid service type.")] 
         [Display(Name = "Service Type")]
         public int ServiceTypeId { get; set; }
         public IEnumerable<SelectListItem> ServiceTypes { get; set; }

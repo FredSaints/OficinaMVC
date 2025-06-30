@@ -1,0 +1,44 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.Invoice>
+@{
+    ViewData["Title"] = "All Invoices";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2 class="mb-0 text-primary"><i class="bi bi-receipt-cutoff me-2"></i>@ViewData["Title"]</h2>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Invoice #</th>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th>Vehicle</th>
+                    <th class="text-end">Total Amount</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="ps-4 fw-bold">#@item.Id.ToString("D5")</td>
+                        <td>@item.InvoiceDate.ToString("d")</td>
+                        <td>@item.Repair.Vehicle.Owner.FullName</td>
+                        <td>@item.Repair.Vehicle.LicensePlate</td>
+                        <td class="text-end">@item.TotalAmount.ToString("C")</td>
+                        <td><span class="badge bg-danger">@item.Status</span></td>
+                        <td class="text-end pe-4">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary btn-sm btn-icon-text">
+                                <i class="bi bi-eye"></i> View Invoice
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

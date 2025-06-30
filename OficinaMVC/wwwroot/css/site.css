@@ -26,3 +26,62 @@ body {
     align-items: center;
     gap: 0.25rem;
 }
+
+
+/* ========================================= */
+/*  HOME PAGE & CUSTOM STYLING             */
+/* ========================================= */
+
+/* Main hero container to position content below the navbar */
+.hero-container {
+    padding-top: 56px; /* Adjust this value to match your navbar's height */
+    background-color: #f8f9fa; /* Light grey background for the whole section */
+}
+
+/* The two-column grid layout */
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column on mobile */
+    min-height: calc(100vh - 56px); /* Full viewport height minus navbar height */
+}
+
+/* Switch to two columns on larger screens */
+@media (min-width: 992px) {
+    .hero-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* The column for the text content */
+.hero-text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 4rem; /* Generous padding for text */
+}
+
+/* The column for the image */
+.hero-image-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Hide any minor overflow */
+}
+
+    .hero-image-content img {
+        width: 100%;
+        height: auto; /* Let height be determined by aspect ratio */
+        max-height: 90vh; /* Prevent image from being excessively tall */
+        object-fit: contain; /* THE FIX: 'contain' ensures the WHOLE image is visible without distortion */
+    }
+
+
+/* Service Card Hover Effect */
+.service-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    }

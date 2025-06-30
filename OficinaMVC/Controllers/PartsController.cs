@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 
@@ -11,10 +13,12 @@ namespace OficinaMVC.Controllers
         public class PartsController : Controller
         {
             private readonly IPartRepository _partRepository;
+            private readonly DataContext _context;
 
-            public PartsController(IPartRepository partRepository)
+            public PartsController(IPartRepository partRepository, DataContext context)
             {
                 _partRepository = partRepository;
+                _context = context;
             }
 
             public async Task<IActionResult> Index()
@@ -32,6 +36,12 @@ namespace OficinaMVC.Controllers
             [ValidateAntiForgeryToken]
             public async Task<IActionResult> Create(Part part)
             {
+                var exists = await _context.Parts.AnyAsync(p => p.Name == part.Name);
+                if (exists)
+                {
+                    ModelState.AddModelError("Name", "A part with this name already exists.");
+                }
+
                 if (ModelState.IsValid)
                 {
                     await _partRepository.CreateAsync(part);
@@ -58,6 +68,12 @@ namespace OficinaMVC.Controllers
                 if (id != part.Id)
                 {
                     return NotFound();
+                }
+
+                var exists = await _context.Parts.AnyAsync(p => p.Name == part.Name && p.Id != id);
+                if (exists)
+                {
+                    ModelState.AddModelError("Name", "A part with this name already exists.");
                 }
 
                 if (ModelState.IsValid)
@@ -89,7 +105,16 @@ namespace OficinaMVC.Controllers
                     return NotFound();
                 }
 
-                // TODO: Add check here to prevent deleting a part that is used in a repair.
+                var context = _partRepository.GetContext();
+                var isPartUsed = await context.RepairParts.AnyAsync(rp => rp.PartId == id);
+
+                if (isPartUsed)
+                {
+                    ViewData["ReturnController"] = "Parts";
+                    ViewData["ReturnAction"] = "Index";
+                    ModelState.AddModelError(string.Empty, "This part cannot be deleted because it is part of a repair record.");
+                    return View("DeleteConfirmationError", part);
+                }
 
                 await _partRepository.DeleteAsync(part);
                 TempData["SuccessMessage"] = "Part deleted successfully.";

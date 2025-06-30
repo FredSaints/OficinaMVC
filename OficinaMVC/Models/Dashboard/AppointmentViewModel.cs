@@ -8,5 +8,6 @@
         public string VehicleInfo { get; set; }
         public string MechanicName { get; set; }
         public string ServiceType { get; set; }
+        public int? RepairId { get; set; }
     }
 }

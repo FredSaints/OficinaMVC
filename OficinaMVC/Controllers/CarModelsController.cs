@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Models.Vehicles;
@@ -11,11 +13,13 @@ namespace OficinaMVC.Controllers
     {
         private readonly ICarModelRepository _carModelRepository;
         private readonly IBrandRepository _brandRepository;
+        private readonly DataContext _context;
 
-        public CarModelsController(ICarModelRepository carModelRepository, IBrandRepository brandRepository)
+        public CarModelsController(ICarModelRepository carModelRepository, IBrandRepository brandRepository, DataContext context)
         {
             _carModelRepository = carModelRepository;
             _brandRepository = brandRepository;
+            _context = context;
         }
 
         // GET: CarModels
@@ -28,10 +32,8 @@ namespace OficinaMVC.Controllers
         // GET: CarModels/Create
         public async Task<IActionResult> Create()
         {
-            // Pass the dropdown list to the view via ViewBag
             ViewBag.Brands = await _brandRepository.GetCombo();
 
-            // The viewModel is now much simpler
             var viewModel = new CarModelViewModel();
             return View(viewModel);
         }
@@ -41,6 +43,12 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CarModelViewModel viewModel)
         {
+            var exists = await _context.CarModels.AnyAsync(m => m.Name == viewModel.Name && m.BrandId == viewModel.BrandId);
+            if (exists)
+            {
+                ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
+            }
+
             if (ModelState.IsValid)
             {
                 var carModel = new CarModel
@@ -52,7 +60,6 @@ namespace OficinaMVC.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // If invalid, repopulate the ViewBag and return
             ViewBag.Brands = await _brandRepository.GetCombo();
             return View(viewModel);
         }
@@ -66,7 +73,6 @@ namespace OficinaMVC.Controllers
                 return NotFound();
             }
 
-            // Pass the dropdown list to the view via ViewBag
             ViewBag.Brands = await _brandRepository.GetCombo();
 
             var viewModel = new CarModelViewModel
@@ -88,6 +94,12 @@ namespace OficinaMVC.Controllers
                 return BadRequest();
             }
 
+            var exists = await _context.CarModels.AnyAsync(m => m.Name == viewModel.Name && m.BrandId == viewModel.BrandId && m.Id != id);
+            if (exists)
+            {
+                ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
+            }
+
             if (ModelState.IsValid)
             {
                 var carModel = new CarModel
@@ -100,7 +112,6 @@ namespace OficinaMVC.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // If invalid, repopulate the ViewBag and return
             ViewBag.Brands = await _brandRepository.GetCombo();
             return View(viewModel);
         }
@@ -113,7 +124,6 @@ namespace OficinaMVC.Controllers
             {
                 return NotFound();
             }
-            // Load the brand to display its name
             ViewBag.BrandName = (await _brandRepository.GetByIdAsync(carModel.BrandId))?.Name;
             return View(carModel);
         }
@@ -128,6 +138,16 @@ namespace OficinaMVC.Controllers
             {
                 return NotFound();
             }
+
+            var hasVehicles = await _context.Vehicles.AnyAsync(v => v.CarModelId == id);
+            if (hasVehicles)
+            {
+                ViewData["ReturnController"] = "CarModels";
+                ViewData["ReturnAction"] = "Index";
+                ModelState.AddModelError(string.Empty, "This model cannot be deleted because it is assigned to one or more vehicles.");
+                return View("DeleteConfirmationError", carModel);
+            }
+
             await _carModelRepository.DeleteAsync(carModel);
             return RedirectToAction(nameof(Index));
         }

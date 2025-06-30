@@ -46,7 +46,14 @@
                         </div>
                         <div class="col-12">
                             <label asp-for="MechanicId" class="form-label"></label>
-                            <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg" id="MechanicId" disabled></select>
+                            <div class="input-group">
+                                <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg" id="MechanicId" disabled></select>
+                                <span class="input-group-text" id="mechanic-spinner" style="display: none;">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </span>
+                            </div>
                             <span asp-validation-for="MechanicId" class="text-danger small"></span>
                         </div>
                         <div class="col-12">

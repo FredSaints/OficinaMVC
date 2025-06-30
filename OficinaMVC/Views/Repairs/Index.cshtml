@@ -18,13 +18,43 @@
     <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
 }
 
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="clientName" class="form-label">Client Name</label>
+                <input type="text" id="clientName" name="clientName" class="form-control" value="@ViewData["CurrentClientName"]" placeholder="Search by name...">
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="Ongoing" selected="@("Ongoing".Equals(ViewData["CurrentStatus"] as string))">Ongoing</option>
+                    <option value="Completed" selected="@("Completed".Equals(ViewData["CurrentStatus"] as string))">Completed</option>
+                    <option value="All" selected="@("All".Equals(ViewData["CurrentStatus"] as string))">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Start Date From</label>
+                <input type="date" id="startDate" name="startDate" class="form-control" value="@ViewData["CurrentStartDate"]">
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">Start Date To</label>
+                <input type="date" id="endDate" name="endDate" class="form-control" value="@ViewData["CurrentEndDate"]">
+            </div>
+            <div class="col-md-1 d-flex">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                <a asp-action="Index" class="btn btn-secondary ms-2" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         @if (!Model.Any())
         {
             <div class="text-center p-5">
-                <p class="lead text-muted">No repairs found.</p>
+                <p class="lead text-muted">No repairs found matching your criteria.</p>
             </div>
         }
         else
@@ -56,7 +86,6 @@
                                     <span class="badge bg-success">@item.Status</span>
                                 }
                             </td>
-
                             <td class="text-end pe-4">
                                 <div class="d-inline-flex gap-1" role="group" aria-label="Repair Actions">
                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm btn-icon-text">
@@ -70,7 +99,13 @@
                                         <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm btn-icon-text">
                                             <i class="bi bi-trash"></i>Cancel
                                         </a>
-                                    }                                    
+                                    }
+                                    @if (item.Status == "Completed")
+                                    {
+                                        <a asp-controller="Invoices" asp-action="GenerateFromRepair" asp-route-repairId="@item.Id" class="btn btn-success btn-sm btn-icon-text">
+                                            <i class="bi bi-receipt"></i> Invoice
+                                        </a>
+                                    }
                                 </div>
                             </td>
                         </tr>

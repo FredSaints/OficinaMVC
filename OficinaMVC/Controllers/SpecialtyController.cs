@@ -37,6 +37,12 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Specialty model)
         {
+            var exists = await _context.Specialties.AnyAsync(s => s.Name == model.Name);
+            if (exists)
+            {
+                ModelState.AddModelError("Name", "A specialty with this name already exists.");
+            }
+
             if (ModelState.IsValid)
             {
                 await _specialtyRepository.CreateAsync(model);
@@ -59,6 +65,12 @@ namespace OficinaMVC.Controllers
         public async Task<IActionResult> Edit(int id, Specialty model)
         {
             if (id != model.Id) return NotFound();
+
+            var exists = await _context.Specialties.AnyAsync(s => s.Name == model.Name && s.Id != id);
+            if (exists)
+            {
+                ModelState.AddModelError("Name", "A specialty with this name already exists.");
+            }
 
             if (ModelState.IsValid)
             {
@@ -86,8 +98,10 @@ namespace OficinaMVC.Controllers
             var hasReferences = await _context.UserSpecialties.AnyAsync(us => us.SpecialtyId == id);
             if (hasReferences)
             {
+                ViewData["ReturnController"] = "Specialty";
+                ViewData["ReturnAction"] = "Index";
                 ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more users.");
-                return View(specialty);
+                return View("DeleteConfirmationError", specialty);
             }
 
             try
@@ -97,8 +111,10 @@ namespace OficinaMVC.Controllers
             }
             catch (DbUpdateException)
             {
-                ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more users.");
-                return View(specialty);
+                ViewData["ReturnController"] = "Specialty";
+                ViewData["ReturnAction"] = "Index";
+                ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more mechanics.");
+                return View("DeleteConfirmationError", specialty);
             }
         }
     }

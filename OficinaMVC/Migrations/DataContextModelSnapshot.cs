@@ -249,6 +249,70 @@ namespace OficinaMVC.Migrations
                     b.ToTable("CarModels");
                 });
 
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RepairId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepairId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.InvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceItems");
+                });
+
             modelBuilder.Entity("OficinaMVC.Data.Entities.Part", b =>
                 {
                     b.Property<int>("Id")
@@ -662,6 +726,28 @@ namespace OficinaMVC.Migrations
                     b.Navigation("Brand");
                 });
 
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Invoice", b =>
+                {
+                    b.HasOne("OficinaMVC.Data.Entities.Repair", "Repair")
+                        .WithMany()
+                        .HasForeignKey("RepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Repair");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.InvoiceItem", b =>
+                {
+                    b.HasOne("OficinaMVC.Data.Entities.Invoice", "Invoice")
+                        .WithMany("InvoiceItems")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("OficinaMVC.Data.Entities.Repair", b =>
                 {
                     b.HasOne("OficinaMVC.Data.Entities.Appointment", "Appointment")
@@ -772,6 +858,11 @@ namespace OficinaMVC.Migrations
             modelBuilder.Entity("OficinaMVC.Data.Entities.Brand", b =>
                 {
                     b.Navigation("CarModels");
+                });
+
+            modelBuilder.Entity("OficinaMVC.Data.Entities.Invoice", b =>
+                {
+                    b.Navigation("InvoiceItems");
                 });
 
             modelBuilder.Entity("OficinaMVC.Data.Entities.Part", b =>

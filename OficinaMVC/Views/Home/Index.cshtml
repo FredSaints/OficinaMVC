@@ -1,8 +1,102 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model OficinaMVC.Models.Home.HomeViewModel
+@{
+    ViewData["Title"] = "Welcome to FredAuto";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- Hero Section -->
+<div class="hero-container">
+    <div class="hero-grid">
+        <!-- Text Column -->
+        <div class="hero-text-content">
+            <h1 class="display-4 fw-bold lh-1 text-body-emphasis">FredAuto: Quality Service, Trusted Mechanics</h1>
+            <p class="lead my-4 fs-4">Your one-stop shop for all vehicle maintenance and repair needs. We combine expert knowledge with state-of-the-art technology to get you back on the road safely and quickly.</p>
+            <div class="d-grid gap-2 d-md-flex mt-4">
+                <a asp-controller="Appointment" asp-action="Create" class="btn btn-primary btn-lg px-4 fw-bold btn-icon-text shadow"><i class="bi bi-calendar-plus"></i> Book Now</a>
+                <a asp-controller="Home" asp-action="Index" asp-fragment="services" class="btn btn-outline-secondary btn-lg px-4 btn-icon-text shadow"><i class="bi bi-arrow-down-circle"></i> Our Services</a>
+            </div>
+        </div>
+        <!-- Image Column -->
+        <div class="hero-image-content">
+            <img src="~/images/hero-image.png" alt="Workshop Hero Image" />
+        </div>
+    </div>
+</div>
+
+<!-- The rest of the page content remains inside a standard .container for centered layout -->
+<div class="container">
+
+    <!-- Services ("Ofertas") Section -->
+    <div class="px-4 py-5" id="services">
+        <h2 class="pb-2 border-bottom text-primary text-center"><i class="bi bi-tags-fill me-2"></i>Our Services</h2>
+        <div class="row g-4 py-5 row-cols-1 row-cols-md-2 row-cols-lg-3">
+            @foreach (var service in Model.Services)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm service-card">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-square text-white bg-primary d-inline-flex align-items-center justify-content-center fs-2 rounded-3 mb-3" style="width: 3rem; height: 3rem;">
+                                <i class="bi bi-tools"></i>
+                            </div>
+                            <h3 class="fs-4 text-body-emphasis">@service.Name</h3>
+                            <p>@service.Description</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Mechanics ("Mecânicos") Section -->
+    <div class="px-4 py-5" id="mechanics">
+        <h2 class="pb-2 border-bottom text-primary text-center"><i class="bi bi-person-workspace me-2"></i>Our Expert Team</h2>
+        <div class="row g-4 py-5 justify-content-center">
+            @foreach (var mechanic in Model.Mechanics)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <div class="card h-100 text-center shadow-sm border-0">
+                        <img src="@mechanic.ProfileImageUrl" class="card-img-top" alt="Mechanic Photo" style="height: 250px; object-fit: cover;">
+                        <div class="card-body">
+                            <h4 class="card-title">@mechanic.FullName</h4>
+                            @if (mechanic.Specialties.Any())
+                            {
+                                <p class="card-text">
+                                    @foreach (var specialty in mechanic.Specialties)
+                                    {
+                                        <span class="badge rounded-pill bg-secondary fw-normal">@specialty</span>
+                                    }
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Opening Hours ("Horários") Section -->
+    <div class="px-4 py-5" id="hours">
+        <h2 class="pb-2 border-bottom text-primary text-center"><i class="bi bi-clock-fill me-2"></i>Opening Hours</h2>
+        <div class="row justify-content-center py-5">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush fs-5">
+                            @for (var i = 1; i <= 5; i++)
+                            {
+                                var day = (DayOfWeek)i;
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <strong>@day</strong>
+                                    <span>@(Model.OpeningHours.ContainsKey(day) ? Model.OpeningHours[day] : "Closed")</span>
+                                </li>
+                            }
+                            <li class="list-group-item d-flex justify-content-between align-items-center text-muted">
+                                <strong>Saturday & Sunday</strong>
+                                <span>Closed</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

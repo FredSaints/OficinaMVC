@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using OficinaMVC.Models.Enums;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace OficinaMVC.Models.Vehicles

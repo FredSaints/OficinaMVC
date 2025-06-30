@@ -22,10 +22,16 @@
                 <select asp-for="BrandId" asp-items="Model.Brands" class="form-select" id="BrandId"></select>
                 <span asp-validation-for="BrandId" class="text-danger"></span>
             </div>
-
             <div class="mb-3">
                 <label asp-for="CarModelId" class="form-label"></label>
-                <select asp-for="CarModelId" asp-items="Model.CarModels" class="form-select" id="CarModelId" disabled></select>
+                <div class="input-group">
+                    <select asp-for="CarModelId" asp-items="Model.CarModels" class="form-select" id="CarModelId" disabled></select>
+                    <span class="input-group-text" id="model-spinner" style="display: none;">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </span>
+                </div>
                 <span asp-validation-for="CarModelId" class="text-danger"></span>
             </div>
 

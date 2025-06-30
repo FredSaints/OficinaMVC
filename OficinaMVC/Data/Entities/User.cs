@@ -29,7 +29,7 @@ namespace OficinaMVC.Data.Entities
         [Display(Name = "Full Name")]
         public string FullName => $"{FirstName} {LastName}";
 
-        public ICollection<UserSpecialty>? UserSpecialties { get; set; }
+        public ICollection<UserSpecialty> UserSpecialties { get; set; }//TODO: verificar se pode ser nullable
         public ICollection<Schedule>? Schedules { get; set; }
     }
 }

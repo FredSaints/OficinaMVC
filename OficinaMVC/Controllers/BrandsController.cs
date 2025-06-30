@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 
@@ -9,10 +11,12 @@ namespace OficinaMVC.Controllers
     public class BrandsController : Controller
     {
         private readonly IBrandRepository _brandRepository;
+        private readonly DataContext _context;
 
-        public BrandsController(IBrandRepository brandRepository)
+        public BrandsController(IBrandRepository brandRepository, DataContext context)
         {
             _brandRepository = brandRepository;
+            _context = context;
         }
 
         // GET: Brands
@@ -35,6 +39,13 @@ namespace OficinaMVC.Controllers
         {
             if (ModelState.IsValid)
             {
+                var exists = await _context.Brands.AnyAsync(b => b.Name == brand.Name);
+                if (exists)
+                {
+                    ModelState.AddModelError("Name", "A brand with this name already exists.");
+                    return View(brand);
+                }
+
                 await _brandRepository.CreateAsync(brand);
                 return RedirectToAction(nameof(Index));
             }
@@ -64,6 +75,13 @@ namespace OficinaMVC.Controllers
 
             if (ModelState.IsValid)
             {
+                var exists = await _context.Brands.AnyAsync(b => b.Name == brand.Name && b.Id != id);
+                if (exists)
+                {
+                    ModelState.AddModelError("Name", "A brand with this name already exists.");
+                    return View(brand);
+                }
+
                 await _brandRepository.UpdateAsync(brand);
                 return RedirectToAction(nameof(Index));
             }
@@ -94,8 +112,12 @@ namespace OficinaMVC.Controllers
 
             if (brand.CarModels.Any())
             {
-                ModelState.AddModelError(string.Empty, "Cannot delete this brand because it has associated models. Please delete the models first.");
-                return View(brand);
+                ViewData["ReturnController"] = "Brands";
+                ViewData["ReturnAction"] = "Index";
+
+                ModelState.AddModelError(string.Empty, "This brand cannot be deleted because it has associated models. Please delete the models first.");
+                return View("DeleteConfirmationError", brand);
+
             }
             await _brandRepository.DeleteAsync(brand);
             return RedirectToAction(nameof(Index));

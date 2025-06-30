@@ -22,6 +22,8 @@ namespace OficinaMVC.Data
         public DbSet<CarModel> CarModels { get; set; }
         public DbSet<Part> Parts { get; set; }
         public DbSet<RepairPart> RepairParts { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -91,7 +93,7 @@ namespace OficinaMVC.Data
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-             modelBuilder.Entity<RepairPart>().HasKey(rp => new { rp.RepairId, rp.PartId });
+            modelBuilder.Entity<RepairPart>().HasKey(rp => new { rp.RepairId, rp.PartId });
 
 
             modelBuilder.Entity<RepairPart>()
@@ -110,6 +112,17 @@ namespace OficinaMVC.Data
                 .WithOne(r => r.Appointment)
                 .HasForeignKey<Repair>(r => r.AppointmentId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Repair)
+                .WithMany()
+                .HasForeignKey(i => i.RepairId);
+
+            modelBuilder.Entity<InvoiceItem>()
+                .HasOne(ii => ii.Invoice)
+                .WithMany(i => i.InvoiceItems)
+                .HasForeignKey(ii => ii.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
             var cascadeFKs = modelBuilder.Model

@@ -11,5 +11,6 @@ namespace OficinaMVC.Data.Repositories
         Task RemovePartFromRepairAsync(int repairPartId);
         Task UpdateRepairStatusAndNotesAsync(int repairId, string status, string description);
         Task DeleteRepairAndReturnPartsToStockAsync(int repairId);
+        Task UpdateMechanicsForRepairAsync(int repairId, List<string> mechanicIds);
     }
 }

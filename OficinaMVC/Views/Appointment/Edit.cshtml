@@ -11,7 +11,6 @@
             </div>
             <div class="card-body p-4 p-md-5">
                 <input type="hidden" asp-for="Id" />
-                <!-- THE FIX: Add hidden inputs to preserve these values during POST -->
                 <input type="hidden" asp-for="ClientId" />
                 <input type="hidden" asp-for="VehicleId" />
 
@@ -47,7 +46,14 @@
                         </div>
                         <div class="col-12">
                             <label asp-for="MechanicId" class="form-label"></label>
-                            <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg" id="MechanicId"></select>
+                            <div class="input-group">
+                                <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg" id="MechanicId" disabled></select>
+                                <span class="input-group-text" id="mechanic-spinner" style="display: none;">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </span>
+                            </div>
                             <span asp-validation-for="MechanicId" class="text-danger small"></span>
                         </div>
                         <div class="col-12">

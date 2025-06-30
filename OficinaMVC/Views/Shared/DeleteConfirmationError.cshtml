@@ -1,0 +1,31 @@
+﻿@model object
+@{
+    ViewData["Title"] = "Delete Error";
+    var returnAction = ViewData["ReturnAction"] as string ?? "Index";
+    var returnController = ViewData["ReturnController"] as string ?? "Home";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-danger shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="bi bi-x-octagon-fill me-2"></i>Cannot Delete Item</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">The requested item could not be deleted due to the following reason:</p>
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-warning"></div>
+
+                    <hr />
+                    <p>Please resolve the conflict before attempting to delete this item again.</p>
+                </div>
+                <div class="card-footer text-end">
+                    <a asp-controller="@returnController" asp-action="@returnAction" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left-circle me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

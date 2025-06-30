@@ -85,6 +85,27 @@ namespace OficinaMVC.Controllers
             return Forbid();
         }
 
+        // GET: Vehicle/History/5
+        [Authorize(Roles = "Receptionist,Mechanic,Client")]
+        public async Task<IActionResult> History(int id)
+        {
+            var vehicle = await _vehicleRepo.GetByIdWithDetailsAsync(id);
+            if (vehicle == null)
+            {
+                return NotFound();
+            }
+
+            if (User.IsInRole("Client"))
+            {
+                var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+                if (vehicle.OwnerId != user.Id)
+                {
+                    return Forbid();
+                }
+            }
+            return View(vehicle);
+        }
+
         [Authorize(Roles = "Mechanic,Receptionist")]
         public async Task<IActionResult> Create()
         {
@@ -102,6 +123,14 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(VehicleViewModel model)
         {
+            var existingVehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.LicensePlate == model.LicensePlate);
+
+            if (existingVehicle != null)
+            {
+                ModelState.AddModelError("LicensePlate", "A vehicle with this license plate already exists.");
+            }
+
             ModelState.Remove("Brands");
             ModelState.Remove("CarModels");
             ModelState.Remove("OwnerList");
@@ -123,6 +152,7 @@ namespace OficinaMVC.Controllers
             };
 
             await _vehicleRepo.CreateAsync(vehicle);
+            TempData["SuccessMessage"] = "Vehicle created successfully!"; // Added for better UX
             return RedirectToAction(nameof(Index));
         }
 
@@ -238,8 +268,10 @@ namespace OficinaMVC.Controllers
 
             if (hasAppointments || hasRepairs)
             {
+                ViewData["ReturnController"] = "Vehicle";
+                ViewData["ReturnAction"] = "Index";
                 ModelState.AddModelError(string.Empty, "This vehicle cannot be deleted because it has associated appointments or repair history.");
-                return View("Delete", vehicle);
+                return View("DeleteConfirmationError", vehicle);
             }
 
             await _vehicleRepo.DeleteAsync(vehicle);

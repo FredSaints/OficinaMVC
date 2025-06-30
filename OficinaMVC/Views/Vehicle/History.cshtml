@@ -1,0 +1,109 @@
+﻿@model OficinaMVC.Data.Entities.Vehicle
+@{
+    ViewData["Title"] = "Repair History";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0 text-primary">
+            <i class="bi bi-clock-history me-2"></i>Repair History for @Model.LicensePlate
+        </h2>
+        <a asp-action="Index" class="btn btn-secondary btn-icon-text">
+            <i class="bi bi-arrow-left"></i> Back to Vehicle List
+        </a>
+    </div>
+    
+    <p class="text-muted">
+        Showing all recorded interventions for vehicle: <strong>@Model.CarModel.Brand.Name @Model.CarModel.Name</strong>
+    </p>
+    
+    <hr/>
+
+    <div id="repair-history-container" class="mt-4">
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading history...</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        const vehicleId = @Model.Id;
+        const historyContainer = $('#repair-history-container');
+
+        function loadHistory() {
+            $.ajax({
+                url: `/api/VehicleHistory/${vehicleId}`,
+                type: 'GET',
+                success: function(historyData) {
+                    historyContainer.empty();
+
+                    if (historyData.length === 0) {
+                        historyContainer.html('<div class="alert alert-info">No repair history found for this vehicle.</div>');
+                        return;
+                    }
+
+                    const accordion = $('<div class="accordion" id="historyAccordion"></div>');
+                    $.each(historyData, function(index, repair) {
+                        const cardId = `repair-card-${repair.repairId}`;
+                        const collapseId = `repair-collapse-${repair.repairId}`;
+                        const startDate = new Date(repair.startDate).toLocaleDateString('pt-PT');
+                        const statusBadgeClass = repair.status === 'Completed' ? 'bg-success' : 'bg-warning text-dark';
+                        const totalCost = repair.totalCost.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+
+                        const accordionItem = $('<div class="accordion-item"></div>');
+                        const accordionHeader = $(`<h2 class="accordion-header" id="${cardId}"></h2>`);
+                        const accordionButton = $(`
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                                <div class="w-100 d-flex justify-content-between pe-3">
+                                    <strong>Repair #${repair.repairId} - ${startDate}</strong>
+                                    <span class="badge ${statusBadgeClass}">${repair.status}</span>
+                                </div>
+                            </button>`);
+                        const accordionCollapse = $(`<div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#historyAccordion"></div>`);
+                        const accordionBody = $('<div class="accordion-body"></div>');
+                        
+                        accordionBody.append(`<p><strong>Description:</strong> ${repair.description}</p>`);
+                        
+                        if (repair.mechanics && repair.mechanics.length > 0) {
+                            accordionBody.append(`<p><strong>Mechanics:</strong> ${repair.mechanics.join(', ')}</p>`);
+                        }
+
+                        accordionBody.append(`<p><strong>Total Cost:</strong> ${totalCost}</p>`);
+                        accordionBody.append('<hr><h5>Parts Used:</h5>');
+
+                        if (repair.partsUsed.length > 0) {
+                            const partsList = $('<ul class="list-group list-group-flush"></ul>');
+                            $.each(repair.partsUsed, function(i, part) {
+                                const unitPrice = part.unitPrice.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+                                partsList.append(`<li class="list-group-item ps-0">${part.quantity} x ${part.name} (${unitPrice})</li>`);
+                            });
+                            accordionBody.append(partsList);
+                        } else {
+                            accordionBody.append('<p class="text-muted">No parts were recorded for this repair.</p>');
+                        }
+
+                        accordionHeader.append(accordionButton);
+                        accordionCollapse.append(accordionBody);
+                        accordionItem.append(accordionHeader, accordionCollapse);
+                        accordion.append(accordionItem);
+                    });
+                    historyContainer.append(accordion);
+                },
+                error: function(jqXHR) {
+                    let errorMessage = 'An error occurred while fetching repair history.';
+                    if (jqXHR.status === 404) { errorMessage = 'No repair history found for this vehicle.'; }
+                    if (jqXHR.status === 401 || jqXHR.status === 403) { errorMessage = 'You are not authorized to view this information.'; }
+                    historyContainer.html(`<div class="alert alert-danger">${errorMessage}</div>`);
+                }
+            });
+        }
+        
+        loadHistory();
+    });
+</script>
+}
