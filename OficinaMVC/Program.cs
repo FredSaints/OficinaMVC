@@ -4,11 +4,13 @@ using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
+using OficinaMVC.Hubs;
 using OficinaMVC.Services;
 using System.Runtime.InteropServices;
 
@@ -105,6 +107,8 @@ internal class Program
 
         builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
         builder.Services.AddScoped<IPdfService, PdfService>();
+        builder.Services.AddSignalR();
+        builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
         var app = builder.Build();
 
@@ -123,11 +127,11 @@ internal class Program
         }
         else
         {
-            app.UseExceptionHandler("/Error");
+            //app.UseExceptionHandler("/Error");
             app.UseHsts();
         }
 
-        app.UseStatusCodePagesWithReExecute("/Error/{0}");
+        //app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
@@ -142,6 +146,8 @@ internal class Program
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
+
+        app.MapHub<NotificationHub>("/notificationHub");
 
         app.MapHangfireDashboard();
 

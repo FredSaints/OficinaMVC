@@ -9,7 +9,7 @@ namespace OficinaMVC.Controllers
 {
     namespace OficinaMVC.Controllers
     {
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Mechanic,Receptionist")]
         public class PartsController : Controller
         {
             private readonly IPartRepository _partRepository;

@@ -1,0 +1,18 @@
+﻿@model OficinaMVC.Models.Email.RepairCompleteEmailViewModel
+@{
+    Layout = null;
+}
+
+<h1>Your Vehicle is Ready!</h1>
+<p>Hello @Model.ClientFirstName,</p>
+<p>We are pleased to inform you that the repair work on your vehicle has been completed.</p>
+<hr>
+<h3>Details:</h3>
+<ul>
+    <li><strong>Vehicle:</strong> @Model.VehicleDescription (@Model.LicensePlate)</li>
+    <li><strong>Repair ID:</strong> #@Model.RepairId</li>
+    <li><strong>Date Completed:</strong> @Model.CompletionDate</li>
+</ul>
+<p>You may now come to our workshop to pick up your vehicle at your convenience during our business hours. An invoice will be generated upon your arrival.</p>
+<p>Thank you for choosing FredAuto Workshop!</p>
+<p><em>The FredAuto Team</em></p>

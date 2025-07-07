@@ -1,0 +1,21 @@
+﻿@model OficinaMVC.Models.Email.AppointmentConfirmedEmailViewModel
+@{
+    Layout = null;
+}
+
+<h1>Appointment Confirmation</h1>
+<p>Hello @Model.ClientFirstName,</p>
+<p>This email is to confirm that your appointment has been successfully booked with FredAuto Workshop. Please find the details below:</p>
+
+<hr>
+<h3>Appointment Details:</h3>
+<ul>
+    <li><strong>Date & Time:</strong> @Model.AppointmentDate</li>
+    <li><strong>Vehicle:</strong> @Model.VehicleDescription (@Model.LicensePlate)</li>
+    <li><strong>Service Requested:</strong> @Model.ServiceType</li>
+    <li><strong>Assigned Mechanic:</strong> @Model.AssignedMechanic</li>
+</ul>
+
+<p>If you need to make any changes, please contact us as soon as possible.</p>
+<p>We look forward to seeing you!</p>
+<p><em>The FredAuto Team</em></p>

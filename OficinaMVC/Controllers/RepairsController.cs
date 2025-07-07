@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
+using OficinaMVC.Hubs;
+using OficinaMVC.Services;
 
 namespace OficinaMVC.Controllers
 {
@@ -15,16 +18,25 @@ namespace OficinaMVC.Controllers
         private readonly IPartRepository _partRepository;
         private readonly DataContext _context;
         private readonly IUserHelper _userHelper;
+        private readonly IMailHelper _mailHelper;
+        private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
+        private readonly IViewRendererService _viewRenderer;
 
         public RepairsController(IRepairRepository repairRepository,
                                  IPartRepository partRepository,
                                  DataContext dataContext,
-                                 IUserHelper userHelper)
+                                 IUserHelper userHelper,
+                                  IMailHelper mailHelper,
+                                 IHubContext<NotificationHub, INotificationClient> notificationHub,
+                                  IViewRendererService viewRenderer)
         {
             _repairRepository = repairRepository;
             _partRepository = partRepository;
             _context = dataContext;
             _userHelper = userHelper;
+            _mailHelper = mailHelper;
+            _notificationHub = notificationHub;
+            _viewRenderer = viewRenderer;
         }
 
         public async Task<IActionResult> Index(string status, string clientName, DateTime? startDate, DateTime? endDate)
@@ -126,8 +138,17 @@ namespace OficinaMVC.Controllers
         {
             try
             {
-                await _repairRepository.AddPartToRepairAsync(repairId, partId, quantity);
+                var updatedPart = await _repairRepository.AddPartToRepairAsync(repairId, partId, quantity);
                 TempData["SuccessMessage"] = "Part added successfully.";
+
+                if (updatedPart != null && updatedPart.StockQuantity <= 5)
+                {
+                    var message = $"Low Stock Alert: Only {updatedPart.StockQuantity} units of '{updatedPart.Name}' remain.";
+                    var url = Url.Action("Edit", "Parts", new { id = updatedPart.Id });
+                    var icon = "bi-exclamation-triangle-fill text-danger";
+
+                    await _notificationHub.Clients.Group("Receptionist").ReceiveNotification(message, url, icon);
+                }
             }
             catch (Exception ex)
             {
@@ -166,9 +187,7 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Complete(int id)
         {
-            // We can reuse the UpdateRepairStatusAndNotesAsync method, or create a new one.
-            // For clarity, let's just update the status here directly.
-            var repair = await _context.Repairs.FindAsync(id); // Assuming DataContext is injected
+            var repair = await _repairRepository.GetByIdWithDetailsAsync(id);
             if (repair == null)
             {
                 return NotFound();
@@ -180,6 +199,38 @@ namespace OficinaMVC.Controllers
                 repair.EndDate = DateTime.Now;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Repair #{repair.Id} has been marked as completed.";
+
+                var clientMessage = $"Good news! The repair on your vehicle ({repair.Vehicle.LicensePlate}) is complete.";
+                var clientUrl = Url.Action("History", "Vehicle", new { id = repair.VehicleId });
+                var clientIcon = "bi-check-circle-fill text-success";
+                await _notificationHub.Clients.User(repair.Vehicle.OwnerId).ReceiveNotification(clientMessage, clientUrl, clientIcon);
+
+                var receptionistMessage = $"Repair #{repair.Id} for {repair.Vehicle.LicensePlate} is complete. An invoice can now be generated.";
+                var receptionistUrl = Url.Action("GenerateFromRepair", "Invoices", new { repairId = repair.Id });
+                var receptionistIcon = "bi-receipt text-info";
+                await _notificationHub.Clients.Group("Receptionist").ReceiveNotification(receptionistMessage, receptionistUrl, receptionistIcon);
+
+                try
+                {
+                    var emailViewModel = new Models.Email.RepairCompleteEmailViewModel
+                    {
+                        ClientFirstName = repair.Vehicle.Owner.FirstName,
+                        VehicleDescription = $"{repair.Vehicle.CarModel.Brand.Name} {repair.Vehicle.CarModel.Name}",
+                        LicensePlate = repair.Vehicle.LicensePlate,
+                        RepairId = repair.Id,
+                        CompletionDate = repair.EndDate?.ToString("dddd, MMMM dd, yyyy 'at' h:mm tt") ?? "N/A"
+                    };
+
+                    var emailBody = await _viewRenderer.RenderToStringAsync("/Views/Shared/_EmailTemplates/RepairCompleteEmail.cshtml", emailViewModel);
+
+                    var subject = $"Your Repair is Complete - FredAuto Workshop";
+                    _mailHelper.SendEmail(repair.Vehicle.Owner.Email, subject, emailBody);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending completion email: {ex.Message}");
+                    TempData["WarningMessage"] = "Repair completed, but the confirmation email could not be sent to the client.";
+                }
             }
             else
             {

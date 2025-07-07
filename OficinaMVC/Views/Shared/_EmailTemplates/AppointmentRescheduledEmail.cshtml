@@ -1,0 +1,21 @@
+﻿@model OficinaMVC.Models.Email.AppointmentRescheduledEmailViewModel
+@{
+    Layout = null;
+}
+
+<h1>Appointment Rescheduled</h1>
+<p>Hello @Model.ClientFirstName,</p>
+<p>This email confirms that your appointment for your vehicle has been rescheduled. Please review the updated details below:</p>
+
+<hr>
+<h3>Details:</h3>
+<ul>
+    <li><strong>Vehicle:</strong> @Model.VehicleDescription (@Model.LicensePlate)</li>
+    <li><strong>Original Appointment:</strong> @Model.OldAppointmentDate</li>
+    <li><strong>New Appointment:</strong> @Model.NewAppointmentDate</li>
+</ul>
+
+<p>We apologize for any inconvenience this may cause. If you have any questions or need to make further changes, please contact us.</p>
+<p>Thank you for your understanding.</p>
+
+<p><em>The FredAuto Team</em></p>

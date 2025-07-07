@@ -7,6 +7,7 @@
 
 <div class="row justify-content-center">
     <div class="col-lg-10">
+        <!-- Main Form for Notes -->
         <form asp-action="UpdateDetails" asp-route-id="@Model.Id" method="post" class="card shadow-lg border-0 mt-4">
             <div class="card-header bg-warning text-dark py-3">
                 <h2 class="mb-0 text-center"><i class="bi bi-pencil-square me-2"></i>@ViewData["Title"] #@Model.Id</h2>
@@ -38,6 +39,7 @@
             </div>
         </form>
 
+        <!-- Mechanics Management Card -->
         <div class="card shadow-sm border-0 mt-4">
             <div class="card-header"><h4 class="mb-0"><i class="bi bi-people-fill me-2"></i>Assigned Mechanics</h4></div>
             <div class="card-body p-4">
@@ -46,26 +48,11 @@
                     <input type="hidden" name="repairId" value="@Model.Id" />
 
                     <div class="mb-3">
-                        <label class="form-label">Currently Assigned:</label>
-                        <div>
-                            @if (!Model.Mechanics.Any())
-                            {
-                                <span class="text-muted">No mechanics assigned.</span>
-                            }
-                            else
-                            {
-                                foreach (var mechanic in Model.Mechanics.OrderBy(m => m.FullName))
-                                {
-                                    <span class="badge bg-primary fs-6 me-1">@mechanic.FullName</span>
-                                }
-                            }
-                        </div>
-                    </div>
-                    <hr />
-                    <div class="mb-3">
-                        <label for="selectedMechanicIds" class="form-label fw-bold">Assign or Update Mechanics</label>
-                        <p class="text-muted small">Select one or more mechanics from the list. Use CTRL+Click (or CMD+Click on Mac) to select multiple.</p>
-                        @Html.ListBox("selectedMechanicIds", (MultiSelectList)ViewBag.AllMechanics, new { @class = "form-control", style = "height: 150px;" })
+                        <label for="selectedMechanicIds" class="form-label fw-bold">Select and Assign Mechanics</label>
+                        <!-- **** START OF CHANGE **** -->
+                        <!-- The ListBox now has a unique ID for the JavaScript to target -->
+                        @Html.ListBox("selectedMechanicIds", (MultiSelectList)ViewBag.AllMechanics, new { @class = "form-control", id = "mechanics-select" })
+                        <!-- **** END OF CHANGE **** -->
                     </div>
                     <div class="text-end">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-person-check-fill me-1"></i> Update Assigned Mechanics</button>
@@ -74,6 +61,7 @@
             </div>
         </div>
 
+        <!-- Parts Management Card -->
         <div class="card shadow-sm border-0 mt-4">
             <div class="card-header"><h4 class="mb-0">Parts Used (Total: @Model.TotalCost.ToString("C"))</h4></div>
             <div class="card-body">
@@ -137,6 +125,7 @@
             </div>
         </div>
 
+        <!-- Complete Repair Button -->
         <div class="text-center mt-4">
             <button type="button" class="btn btn-success btn-lg px-5 shadow" data-bs-toggle="modal" data-bs-target="#completeRepairModal">
                 <i class="bi bi-check2-circle me-1"></i> Complete This Repair
@@ -145,6 +134,7 @@
     </div>
 </div>
 
+<!-- Modal for Completion -->
 <div class="modal fade" id="completeRepairModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -170,7 +160,22 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <!-- **** START OF NEW SCRIPT SECTION **** -->
     <script>
+        $(document).ready(function() {
+            // Initialize Select2 on the mechanics dropdown
+            $('#mechanics-select').select2({
+                theme: "bootstrap-5",
+                placeholder: "Search and select mechanics...",
+                width: '100%' // Ensure it takes the full width of its container
+            });
+        });
+    </script>
+    <!-- **** END OF NEW SCRIPT SECTION **** -->
+
+    <script>
+        // Existing script for stock checking
         $(document).ready(function() {
             const partSelect = $('#partIdSelect');
             const quantityInput = $('#quantityInput');

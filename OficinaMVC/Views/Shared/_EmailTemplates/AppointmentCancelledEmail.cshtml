@@ -1,0 +1,11 @@
+﻿@model OficinaMVC.Models.Email.AppointmentCancelledEmailViewModel
+@{
+    Layout = null;
+}
+
+<h1>Appointment Cancellation Notice</h1>
+<p>Hello @Model.ClientFirstName,</p>
+<p>Please be advised that your appointment scheduled for <strong>@Model.AppointmentDate</strong> for your vehicle (@Model.LicensePlate) has been cancelled by the workshop.</p>
+<p>We sincerely apologize for any inconvenience this may cause. Please call us at your earliest convenience to reschedule.</p>
+<p>Sincerely,</p>
+<p><em>The FredAuto Team</em></p>

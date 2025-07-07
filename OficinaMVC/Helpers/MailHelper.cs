@@ -16,12 +16,19 @@ namespace OficinaMVC.Helpers
 
         public Response SendEmail(string to, string subject, string body)
         {
-            // Your existing SendEmail method...
-            var nameFrom = _configuration["Mail:Namefrom"];
+            // Get the configuration settings correctly
+            var nameFrom = _configuration["Mail:NameFrom"];
             var from = _configuration["Mail:From"];
-            var smtp = _configuration["Mail.Smtp"];
+            var smtp = _configuration["Mail:Smtp"];
             var portString = _configuration["Mail:Port"];
             var password = _configuration["Mail:Password"];
+
+            // It's good practice to check if the settings were found
+            if (string.IsNullOrEmpty(smtp) || string.IsNullOrEmpty(from))
+            {
+                // This will help you debug config issues in the future
+                throw new ArgumentException("Email settings (SMTP, From) are missing in appsettings.json");
+            }
 
             if (!int.TryParse(portString, out int port))
             {
@@ -61,7 +68,6 @@ namespace OficinaMVC.Helpers
             return new Response { IsSuccess = true };
         }
 
-        // --- NEW METHOD ---
         public Response SendEmailWithAttachment(string to, string subject, string body, byte[] attachmentData, string attachmentName)
         {
             var nameFrom = _configuration["Mail:Namefrom"];

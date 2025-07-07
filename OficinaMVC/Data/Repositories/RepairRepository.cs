@@ -77,7 +77,7 @@ namespace OficinaMVC.Data.Repositories
             return newRepair;
         }
 
-        public async Task AddPartToRepairAsync(int repairId, int partId, int quantity)
+        public async Task<Part> AddPartToRepairAsync(int repairId, int partId, int quantity)
         {
             var repair = await _context.Repairs.FindAsync(repairId);
             var part = await _context.Parts.FindAsync(partId);
@@ -107,6 +107,8 @@ namespace OficinaMVC.Data.Repositories
             part.StockQuantity -= quantity;
             await _context.SaveChangesAsync();
             await RecalculateRepairTotalCostAsync(repairId);
+
+            return part;
         }
 
         public async Task RemovePartFromRepairAsync(int repairPartId)

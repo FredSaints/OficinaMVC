@@ -1,16 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
+using OficinaMVC.Hubs;
 using OficinaMVC.Models.Appointments;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using OficinaMVC.Services;
 
 namespace OficinaMVC.Controllers
 {
@@ -22,19 +21,28 @@ namespace OficinaMVC.Controllers
         private readonly IVehicleRepository _vehicleRepo;
         private readonly IRepairTypeRepository _repairTypeRepo;
         private readonly DataContext _context;
+        private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
+        private readonly IMailHelper _mailHelper;
+        private readonly IViewRendererService _viewRenderer;
 
         public AppointmentController(
             IAppointmentRepository appointmentRepo,
             IUserHelper userHelper,
             IVehicleRepository vehicleRepo,
             IRepairTypeRepository repairTypeRepo,
-            DataContext context)
+            DataContext context,
+            IHubContext<NotificationHub, INotificationClient> notificationHub,
+             IMailHelper mailHelper,
+             IViewRendererService viewRenderer)
         {
             _appointmentRepo = appointmentRepo;
             _userHelper = userHelper;
             _vehicleRepo = vehicleRepo;
             _repairTypeRepo = repairTypeRepo;
             _context = context;
+            _notificationHub = notificationHub;
+            _mailHelper = mailHelper;
+            _viewRenderer = viewRenderer;
         }
 
         // GET: Appointment/Index
@@ -127,12 +135,53 @@ namespace OficinaMVC.Controllers
                         Notes = model.Notes,
                         Status = "Pending"
                     };
+
                     await _appointmentRepo.CreateAsync(appointment);
+
+                    var createdAppointment = await _context.Appointments
+                        .Include(a => a.Client)
+                        .Include(a => a.Mechanic)
+                        .Include(a => a.Vehicle.CarModel.Brand)
+                        .FirstOrDefaultAsync(a => a.Id == appointment.Id);
+
+                    if (createdAppointment != null)
+                    {
+                        // --- 1. Notify the Mechanic (SignalR) ---
+                        var mechanicMessage = $"New Assignment: A job for '{serviceType.Name}' has been assigned to you for {createdAppointment.Date:g}.";
+                        var mechanicUrl = Url.Action("Index", "Appointment", new { filterDate = createdAppointment.Date.ToString("yyyy-MM-dd") });
+                        var icon = "bi-calendar-plus";
+                        await _notificationHub.Clients.User(model.MechanicId).ReceiveNotification(mechanicMessage, mechanicUrl, icon);
+
+                        // --- 2. Email the Client ---
+                        try
+                        {
+                            var emailViewModel = new Models.Email.AppointmentConfirmedEmailViewModel
+                            {
+                                ClientFirstName = createdAppointment.Client.FirstName,
+                                AppointmentDate = createdAppointment.Date.ToString("dddd, MMMM dd, yyyy 'at' h:mm tt"),
+                                ServiceType = createdAppointment.ServiceType,
+                                VehicleDescription = $"{createdAppointment.Vehicle.CarModel.Brand.Name} {createdAppointment.Vehicle.CarModel.Name}",
+                                LicensePlate = createdAppointment.Vehicle.LicensePlate,
+                                AssignedMechanic = createdAppointment.Mechanic.FullName
+                            };
+
+                            var emailBody = await _viewRenderer.RenderToStringAsync("/Views/Shared/_EmailTemplates/AppointmentConfirmedEmail.cshtml", emailViewModel);
+                            var subject = $"Appointment Confirmed - FredAuto Workshop";
+                            _mailHelper.SendEmail(createdAppointment.Client.Email, subject, emailBody);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending confirmation email: {ex.Message}");
+                            TempData["WarningMessage"] = "Appointment created, but the confirmation email could not be sent to the client.";
+                        }
+                    }
+
                     TempData["SuccessMessage"] = "Appointment created successfully!";
                     return RedirectToAction(nameof(Index));
                 }
                 ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
             }
+
             await RepopulateDropdowns(model);
             return View(model);
         }
@@ -189,19 +238,71 @@ namespace OficinaMVC.Controllers
 
             if (ModelState.IsValid)
             {
-                var appointmentToUpdate = await _appointmentRepo.GetByIdAsync(id);
+                var appointmentToUpdate = await _context.Appointments
+                    .Include(a => a.Client)
+                    .Include(a => a.Vehicle.CarModel.Brand)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+
                 if (appointmentToUpdate == null) return NotFound();
+
                 var serviceType = await _repairTypeRepo.GetByIdAsync(model.ServiceTypeId);
                 if (serviceType != null)
                 {
+                    var originalDate = appointmentToUpdate.Date;
+                    var originalMechanicId = appointmentToUpdate.MechanicId;
+
                     appointmentToUpdate.Date = model.AppointmentDate;
                     appointmentToUpdate.MechanicId = model.MechanicId;
                     appointmentToUpdate.Notes = model.Notes;
                     appointmentToUpdate.ServiceType = serviceType.Name;
+
                     await _appointmentRepo.UpdateAsync(appointmentToUpdate);
                     TempData["SuccessMessage"] = "Appointment updated successfully!";
+
+
+                    if (originalDate != appointmentToUpdate.Date || originalMechanicId != appointmentToUpdate.MechanicId)
+                    {
+                        var oldDateStr = originalDate.ToString("dddd, MMMM dd 'at' h:mm tt");
+                        var newDateStr = appointmentToUpdate.Date.ToString("dddd, MMMM dd 'at' h:mm tt");
+
+                        var clientMessage = $"Update: Your appointment for {appointmentToUpdate.Vehicle.LicensePlate} has been rescheduled to {newDateStr}.";
+                        var clientUrl = Url.Action("Index", "Home"); // Future enhancement: Link to a "My Appointments" page.
+                        await _notificationHub.Clients.User(appointmentToUpdate.ClientId).ReceiveNotification(clientMessage, clientUrl, "bi-calendar-event");
+
+                        var mechanicMessage = $"Update: Appointment for {appointmentToUpdate.Vehicle.LicensePlate} has been moved to {newDateStr}.";
+                        var mechanicUrl = Url.Action("Index", "Dashboard");
+                        await _notificationHub.Clients.User(appointmentToUpdate.MechanicId).ReceiveNotification(mechanicMessage, mechanicUrl, "bi-calendar-event");
+                        if (originalMechanicId != appointmentToUpdate.MechanicId)
+                        {
+                            var oldMechanicMessage = $"Cancelled: The appointment for {appointmentToUpdate.Vehicle.LicensePlate} on {oldDateStr} has been reassigned.";
+                            await _notificationHub.Clients.User(originalMechanicId).ReceiveNotification(oldMechanicMessage, mechanicUrl, "bi-calendar-x");
+                        }
+
+                        try
+                        {
+                            var emailViewModel = new Models.Email.AppointmentRescheduledEmailViewModel
+                            {
+                                ClientFirstName = appointmentToUpdate.Client.FirstName,
+                                VehicleDescription = $"{appointmentToUpdate.Vehicle.CarModel.Brand.Name} {appointmentToUpdate.Vehicle.CarModel.Name}",
+                                LicensePlate = appointmentToUpdate.Vehicle.LicensePlate,
+                                OldAppointmentDate = oldDateStr,
+                                NewAppointmentDate = newDateStr
+                            };
+
+                            var emailBody = await _viewRenderer.RenderToStringAsync("/Views/Shared/_EmailTemplates/AppointmentRescheduledEmail.cshtml", emailViewModel);
+                            var subject = $"Appointment Rescheduled - FredAuto Workshop";
+                            _mailHelper.SendEmail(appointmentToUpdate.Client.Email, subject, emailBody);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error sending appointment update email: {ex.Message}");
+                            TempData["WarningMessage"] = "Appointment updated, but the confirmation email could not be sent.";
+                        }
+                    }
+
                     return RedirectToAction(nameof(Index));
                 }
+
                 ModelState.AddModelError("ServiceTypeId", "Invalid service type selected.");
             }
 
@@ -242,11 +343,48 @@ namespace OficinaMVC.Controllers
         [Authorize(Roles = "Receptionist")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var appointment = await _appointmentRepo.GetByIdAsync(id);
+            var appointment = await _appointmentRepo.GetAll()
+               .Include(a => a.Client)
+               .Include(a => a.Mechanic)
+               .Include(a => a.Vehicle)
+               .FirstOrDefaultAsync(a => a.Id == id);
+
             if (appointment != null)
             {
+                var appointmentDateStr = appointment.Date.ToString("dddd, MMMM dd 'at' h:mm tt");
+
+                // 1.Notify the Mechanic (SignalR)
+                var mechanicMessage = $"Cancelled: Your appointment for {appointment.Vehicle.LicensePlate} on {appointmentDateStr} has been cancelled.";
+                var mechanicUrl = Url.Action("Index", "Dashboard");
+                await _notificationHub.Clients.User(appointment.MechanicId).ReceiveNotification(mechanicMessage, mechanicUrl, "bi-calendar-x-fill text-danger");
+
+                // 2. Notify the Client (SignalR)
+                var clientMessage = $"Your appointment for {appointmentDateStr} has been cancelled by the workshop. Please contact us to reschedule.";
+                var clientUrl = Url.Action("Index", "Home");
+                await _notificationHub.Clients.User(appointment.ClientId).ReceiveNotification(clientMessage, clientUrl, "bi-calendar-x-fill text-danger");
+
+                // 2. Send Email to the Client
+                try
+                {
+                    var emailViewModel = new Models.Email.AppointmentCancelledEmailViewModel
+                    {
+                        ClientFirstName = appointment.Client.FirstName,
+                        AppointmentDate = appointmentDateStr,
+                        LicensePlate = appointment.Vehicle.LicensePlate
+                    };
+
+                    var emailBody = await _viewRenderer.RenderToStringAsync("/Views/Shared/_EmailTemplates/AppointmentCancelledEmail.cshtml", emailViewModel);
+
+                    var subject = $"Appointment Cancellation Notice - FredAuto Workshop";
+                    _mailHelper.SendEmail(appointment.Client.Email, subject, emailBody);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending cancellation email: {ex.Message}");
+                }
+
                 await _appointmentRepo.DeleteAsync(appointment);
-                TempData["SuccessMessage"] = "Appointment has been successfully cancelled.";
+                TempData["SuccessMessage"] = "Appointment has been successfully cancelled and all parties notified.";
             }
             return RedirectToAction(nameof(Index));
         }

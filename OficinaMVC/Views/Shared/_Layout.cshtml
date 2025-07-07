@@ -1,268 +1,153 @@
-﻿@* @inject OficinaMVC.Helpers.IUserHelper UserHelper
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-g" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - FredAuto</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/OficinaMVC.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body class="d-flex flex-column min-vh-100">
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom shadow-sm mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">OficinaMVC</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarContent">
-
-                    <ul class="navbar-nav me-auto mb-2 mb-sm-0">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-
-                        <!-- Admin-only Dropdown -->
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button"
-                                   data-bs-toggle="dropdown" aria-expanded="false">
-                                    Admin
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus me-1"></i> Add User</a></li>
-                                    <li><a class="dropdown-item" asp-controller="RepairType" asp-action="Index"><i class="bi bi-list-ul me-1"></i> Repair Types</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Mechanics" asp-action="Index"><i class="bi bi-person-badge me-1"></i> Mechanics</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Specialty" asp-action="Index"><i class="bi bi-tools me-1"></i> Specialties</a></li>
-                                </ul>
-                            </li>
-                        }
-
-                        <!-- Workshop Dropdown (for Staff) -->
-                        @if (User.IsInRole("Receptionist") || User.IsInRole("Mechanic"))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="workshopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Workshop
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="workshopDropdown">
-                                    <li><a class="dropdown-item" asp-controller="Vehicle" asp-action="Index"><i class="bi bi-car-front-fill me-1"></i> Vehicles</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Appointment" asp-action="Index"><i class="bi bi-calendar-check me-1"></i> Appointments</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Repairs" asp-action="Index"><i class="bi bi-wrench-adjustable-circle-fill me-1"></i> Repairs</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Parts" asp-action="Index"><i class="bi bi-tools me-1"></i> Manage Parts</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Communication" asp-action="Index"><i class="bi bi-broadcast me-1"></i> Communication</a></li>
-                                </ul>
-                            </li>
-                        }
-
-                        <!-- Client-only Menu -->
-                        @if (User.IsInRole("Client"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Vehicle" asp-action="Index">
-                                    <i class="bi bi-car-front me-1"></i> My Vehicles
-                                </a>
-                            </li>
-                        }
-                    </ul>
-
-                    @{
-                        string profileUrl = "/images/default-profile.png";
-                        string displayName = "User";
-
-                        if (User.Identity.IsAuthenticated)
-                        {
-                            var user = await UserHelper.GetUserByEmailAsync(User.Identity.Name);
-                            if (user != null)
-                            {
-                                profileUrl = string.IsNullOrEmpty(user.ProfileImageUrl) ? profileUrl : user.ProfileImageUrl;
-                                displayName = user.FullName;
-                            }
-                        }
-                    }
-                    <ul class="navbar-nav ms-auto">
-                        @if (User.Identity.IsAuthenticated)
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img src="@Url.Content(profileUrl)" alt="Profile" class="rounded-circle border me-2" style="width:40px; height:40px; object-fit:cover;">
-                                    @displayName
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangeUser"><i class="bi bi-person-gear me-2"></i>Edit Profile</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock me-2"></i>Change Password</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout">
-                                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-
-    <div class="container flex-grow-1">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-
-    <footer class="border-top footer text-muted mt-4 py-3">
-        <div class="container-fluid">
-            © @DateTime.Now.Year - OficinaMVC - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-
-
-
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html> *@
-
-
-@inject OficinaMVC.Helpers.IUserHelper UserHelper
+﻿@using System.Security.Claims
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - FredAuto</title>
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OficinaMVC.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Custom Style Block for Layout Adjustments -->
+    <style>
+      body {
+        padding-top: 76px;
+      }
+      .navbar-brand {
+        font-size: 1.6rem;
+      }
+      .navbar .nav-item .nav-link {
+        transition: color 0.2s ease-in-out;
+        font-size: 1.3rem;
+      }
+      .navbar .nav-item .nav-link:hover,
+      .navbar .nav-item .nav-link.active {
+        color: var(--bs-primary) !important;
+      }
+      .dropdown-item i {
+        width: 20px;
+      }
+    </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 bg-light">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom shadow-sm mb-3">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">OficinaMVC</a>
+                <a class="navbar-brand fw-bold text-primary" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-wrench-adjustable-circle-fill"></i>
+                    FredAuto
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
                         aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarContent">
-
-                    <ul class="navbar-nav me-auto mb-2 mb-sm-0">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-
-                        <!-- Admin-only System Management Dropdown -->
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    System Management
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus"></i> Add User</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Mechanics" asp-action="Index"><i class="bi bi-person-badge"></i> Manage Staff</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Brands" asp-action="Index"><i class="bi bi-building-gear"></i> Brands & Models</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="RepairType" asp-action="Index"><i class="bi bi-tags-fill"></i> Repair Types</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Specialty" asp-action="Index"><i class="bi bi-star-fill"></i> Specialties</a></li>
-                                </ul>
+                    
+                     @if (User.IsInRole("Admin"))
+                    {
+                        <!-- This is the corrected Admin navbar block -->
+                        <ul class="navbar-nav w-100 justify-content-center">
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Index"><i class="bi bi-gear-wide-connected me-1"></i>Admin Dashboard</a>
                             </li>
-                        }
-
-                        <!-- Operational Staff (Funcionário) Dropdown -->
-                        @if (User.IsInRole("Receptionist") || User.IsInRole("Mechanic"))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="workshopDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Workshop
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="workshopDropdown">
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Appointment" asp-action="Index"><i class="bi bi-calendar-check"></i> Appointments</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Repairs" asp-action="Index"><i class="bi bi-wrench-adjustable-circle"></i> Repairs</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Invoices" asp-action="Index"><i class="bi bi-receipt"></i> Invoices</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Vehicle" asp-action="Index"><i class="bi bi-car-front"></i> Vehicles</a></li>
-
-                                    @if (User.IsInRole("Receptionist"))
-                                    {
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item btn-icon-text" asp-controller="Parts" asp-action="Index"><i class="bi bi-tools"></i> Manage Parts</a></li>
-                                        <li><a class="dropdown-item btn-icon-text" asp-controller="Communication" asp-action="Index"><i class="bi bi-broadcast"></i> Communication</a></li>
-                                    }
-                                </ul>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus-fill me-1"></i>Add User</a>
                             </li>
-                        }
-
-                        <!-- Client-only Menu -->
-                        @if (User.IsInRole("Client"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark btn-icon-text" asp-controller="Vehicle" asp-action="Index">
-                                    <i class="bi bi-car-front"></i> My Vehicles
-                                </a>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Mechanics" asp-action="Index"><i class="bi bi-person-badge-fill me-1"></i>Manage Staff</a>
                             </li>
-                        }
-                    </ul>
-
-                    <!-- User Profile Section -->
-                    @{
-                        string profileUrl = "/images/default-profile.png";
-                        string displayName = "User";
-
-                        if (User.Identity.IsAuthenticated)
-                        {
-                            var user = await UserHelper.GetUserByEmailAsync(User.Identity.Name);
-                            if (user != null)
-                            {
-                                profileUrl = string.IsNullOrEmpty(user.ProfileImageUrl) ? profileUrl : user.ProfileImageUrl;
-                                displayName = user.FullName;
-                            }
-                        }
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Brands" asp-action="Index"><i class="bi bi-globe2 me-1"></i>Brands</a>
+                            </li>
+                             <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="CarModels" asp-action="Index"><i class="bi bi-boxes me-1"></i>Models</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Specialty" asp-action="Index"><i class="bi bi-star-fill me-1"></i>Specialties</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="RepairType" asp-action="Index"><i class="bi bi-tags-fill me-1"></i>Service Types</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Communication" asp-action="Index"><i class="bi bi-broadcast me-1"></i>Communication</a>
+                            </li>
+                        </ul>
                     }
-                    <ul class="navbar-nav ms-auto">
+                    else if (User.IsInRole("Receptionist") || User.IsInRole("Mechanic"))
+                    {
+                        <ul class="navbar-nav w-100 justify-content-center">
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Appointment" asp-action="Index"><i class="bi bi-calendar-check me-1"></i>Appointments</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Repairs" asp-action="Index"><i class="bi bi-inbox-fill me-1"></i>Repairs</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Vehicle" asp-action="Index"><i class="bi bi-car-front-fill me-1"></i>Vehicles</a>
+                            </li>
+                            <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Invoices" asp-action="Index"><i class="bi bi-receipt me-1"></i>Invoices</a>
+                            </li>
+                        </ul>
+                    }
+                    else if (User.IsInRole("Client"))
+                    {
+                        <ul class="navbar-nav w-100 justify-content-center">
+                             <li class="nav-item mx-2">
+                                <a class="nav-link" asp-controller="Vehicle" asp-action="Index"><i class="bi bi-car-front-fill me-1"></i>My Vehicles</a>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+                            </li>
+                        </ul>
+                    }
+
+                    <!-- User & System Links (Right Side) -->
+                    <ul class="navbar-nav ms-auto d-flex align-items-lg-center">
                         @if (User.Identity.IsAuthenticated)
                         {
+                            string profileUrl = User.Claims.FirstOrDefault(c => c.Type == "ProfileImageUrl")?.Value ?? "/images/default-profile.png";
+                            string displayName = User.Claims.FirstOrDefault(c => c.Type == "FullName")?.Value ?? User.Identity.Name;
+
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img src="@Url.Content(profileUrl)" alt="Profile" class="rounded-circle border me-2" style="width:40px; height:40px; object-fit:cover;">
+                                <a class="nav-link" href="#" id="notification-bell" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                    <i class="bi bi-bell-fill fs-5"></i>
+                                    <span class="badge rounded-pill bg-danger" id="notification-count" style="position: relative; top: -10px; left: -5px; display: none;"></span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg" id="notification-list" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                                    <li class="p-2 text-center text-muted">No new notifications</li>
+                                </ul>
+                            </li>
+                            
+                            <li class="nav-item d-none d-lg-block"><div class="vr mx-2"></div></li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <img src="@profileUrl" alt="Profile" class="rounded-circle me-2" style="width:32px; height:32px; object-fit:cover;">
                                     @displayName
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Account" asp-action="ChangeUser"><i class="bi bi-person-gear"></i>Edit Profile</a></li>
-                                    <li><a class="dropdown-item btn-icon-text" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock"></i>Change Password</a></li>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangeUser"><i class="bi bi-person-gear me-2"></i>My Profile</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock-fill me-2"></i>Change Password</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form asp-controller="Account" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item text-danger btn-icon-text">
-                                                <i class="bi bi-box-arrow-right"></i>Logout
-                                            </button>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -271,9 +156,7 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark btn-icon-text" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right"></i>Login
-                                </a>
+                                <a class="nav-link" asp-controller="Account" asp-action="Login"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
                             </li>
                         }
                     </ul>
@@ -282,24 +165,28 @@
         </nav>
     </header>
 
-    <div class="container flex-grow-1">
+    <div class="container mt-4 flex-grow-1">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted mt-4 py-3">
-        <div class="container-fluid">
-            © @DateTime.Now.Year - OficinaMVC - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="footer border-top bg-white mt-auto py-3">
+        <div class="container">
+            © @DateTime.Now.Year - FredAuto Workshop - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

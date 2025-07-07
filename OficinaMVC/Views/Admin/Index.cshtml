@@ -1,0 +1,73 @@
+﻿@{
+    ViewData["Title"] = "System Administration";
+}
+
+<div class="container py-4">
+    <div class="pb-3 mb-4 border-bottom">
+        <h1 class="display-5 fw-bold"><i class="bi bi-gear-wide-connected me-2"></i>@ViewData["Title"]</h1>
+        <p class="text-muted fs-5">Manage core system settings and user accounts.</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+
+        <!-- User Management -->
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3"><i class="bi bi-people-fill text-primary fs-1"></i></div>
+                    <h4 class="card-title">User Management</h4>
+                    <p class="card-text text-muted">Create new accounts for clients and staff, and manage staff specialties and schedules.</p>
+                    <div class="mt-auto">
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-icon-text"><i class="bi bi-person-plus-fill me-1"></i>Add User</a>
+                        <a asp-controller="Mechanics" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-person-badge-fill me-1"></i>Manage Staff</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Definitions -->
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3"><i class="bi bi-car-front-fill text-success fs-1"></i></div>
+                    <h4 class="card-title">Vehicle Definitions</h4>
+                    <p class="card-text text-muted">Define the vehicle brands and models available for selection throughout the application.</p>
+                    <div class="mt-auto">
+                        <a asp-controller="Brands" asp-action="Index" class="btn btn-success btn-icon-text"><i class="bi bi-globe2 me-1"></i>Manage Brands</a>
+                        <a asp-controller="CarModels" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-boxes me-1"></i>Manage Models</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Definitions -->
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3"><i class="bi bi-tags-fill text-warning fs-1"></i></div>
+                    <h4 class="card-title">Service Definitions</h4>
+                    <p class="card-text text-muted">Configure the types of services your workshop offers and the specialties mechanics can have.</p>
+                    <div class="mt-auto">
+                        <a asp-controller="RepairType" asp-action="Index" class="btn btn-warning btn-icon-text"><i class="bi bi-tags-fill me-1"></i>Service Types</a>
+                        <a asp-controller="Specialty" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-star-fill me-1"></i>Specialties</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Hub -->
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3"><i class="bi bi-broadcast text-info fs-1"></i></div>
+                    <h4 class="card-title">Communication Hub</h4>
+                    <p class="card-text text-muted">Send bulk announcements to all clients or manage appointments in emergencies.</p>
+                    <div class="mt-auto">
+                        <a asp-controller="Communication" asp-action="Index" class="btn btn-info text-white">Go to Hub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
