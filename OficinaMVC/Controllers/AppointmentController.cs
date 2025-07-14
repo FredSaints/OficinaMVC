@@ -470,39 +470,46 @@ namespace OficinaMVC.Controllers
         [Authorize(Roles = "Receptionist")]
         public async Task<JsonResult> GetAvailableMechanics(DateTime appointmentDate)
         {
+            // Basic validation
             if (appointmentDate.Date < DateTime.Today) return Json(new List<SelectListItem>());
 
             DayOfWeek dayOfWeek = appointmentDate.DayOfWeek;
-            TimeSpan appointmentTime = appointmentDate.TimeOfDay;
 
-            var allMechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
-            var mechanicIds = allMechanics.Select(m => m.Id).ToList();
-
-            var busyMechanicIds = await _appointmentRepo.GetAll()
-                .Where(a => a.Date.Date == appointmentDate.Date && a.Status == "Pending")
-                .Select(a => a.MechanicId)
-                .Distinct().ToListAsync();
-
-            var relevantSchedules = await _context.Schedules
-                .Where(s => mechanicIds.Contains(s.UserId) && s.DayOfWeek == dayOfWeek)
+            // 1. Get all mechanics who are scheduled to work on this day of the week.
+            var workingMechanicIds = await _context.Schedules
+                .Where(s => s.DayOfWeek == dayOfWeek)
+                .Select(s => s.UserId)
+                .Distinct()
                 .ToListAsync();
 
-            var availableMechanics = allMechanics.Where(mechanic =>
-            {
-                if (busyMechanicIds.Contains(mechanic.Id)) return false;
-                return relevantSchedules.Any(s => s.UserId == mechanic.Id && appointmentTime >= s.StartTime && appointmentTime < s.EndTime);
-            }).ToList();
+            // 2. Get all mechanics who ALREADY have a pending appointment on this specific date.
+            var busyMechanicIds = await _context.Appointments
+                .Where(a => a.Date.Date == appointmentDate.Date && a.Status == "Pending")
+                .Select(a => a.MechanicId)
+                .Distinct()
+                .ToListAsync();
+
+            // 3. Find the available mechanics.
+            // They must be in the 'working' list AND NOT in the 'busy' list.
+            var availableMechanicIds = workingMechanicIds.Except(busyMechanicIds).ToList();
+
+            var availableMechanics = await _context.Users
+                .Where(u => availableMechanicIds.Contains(u.Id))
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ToListAsync();
 
             var mechanicList = availableMechanics.Select(m => new SelectListItem
             {
                 Value = m.Id,
                 Text = m.FullName
-            }).OrderBy(m => m.Text).ToList();
+            }).ToList();
 
             if (mechanicList.Any())
             {
                 mechanicList.Insert(0, new SelectListItem { Value = "", Text = "Select an available mechanic..." });
             }
+
             return Json(mechanicList);
         }
 

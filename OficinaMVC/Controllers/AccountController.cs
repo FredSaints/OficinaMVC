@@ -8,6 +8,7 @@ using OficinaMVC.Helpers;
 using OficinaMVC.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 
@@ -54,8 +55,14 @@ namespace OficinaMVC.Controllers
                 var user = await _userHelper.GetUserByEmailAsync(model.Username);
                 if (user != null)
                 {
+                    // --- THE FIX IS HERE ---
                     var claims = new List<Claim>
             {
+                // Add the essential claims for the user's identity
+                new Claim(ClaimTypes.Name, user.Email), // This will populate User.Identity.Name
+                new Claim(ClaimTypes.NameIdentifier, user.Id), // This is crucial for user ID lookups
+
+                // Your custom claims are still good
                 new Claim("FullName", user.FullName),
                 new Claim("ProfileImageUrl", user.ProfileImageUrl ?? "/images/default-profile.png")
             };
@@ -111,6 +118,8 @@ namespace OficinaMVC.Controllers
                 return View(model);
             }
 
+            // --- Start of significant changes ---
+
             var existingUser = await _userHelper.GetUserByEmailAsync(model.Email);
             if (existingUser != null)
             {
@@ -139,43 +148,48 @@ namespace OficinaMVC.Controllers
                 Email = model.Email,
                 NIF = model.NIF,
                 PhoneNumber = model.PhoneNumber,
-                ProfileImageUrl = imageUrl
+                ProfileImageUrl = imageUrl,
+                EmailConfirmed = false // Explicitly set to false until user clicks link
             };
 
-            // 1. Generate random password
-            var tempPassword = Guid.NewGuid().ToString("N").Substring(0, 10);
+            // 1. Generate a secure, random temporary password
+            var tempPassword = GenerateRandomPassword();
+
+            // 2. Create the user with the temporary password
             var result = await _userHelper.AddUserAsync(user, tempPassword);
 
             if (result.Succeeded)
             {
-                // 2. Assign selected role
                 await _userHelper.CheckRoleAsync(model.Role);
                 await _userHelper.AddUserToRoleAsync(user, model.Role);
 
-                // 3. Generate password reset token & link (for ALL users)
+                // 3. Generate the EMAIL CONFIRMATION token and link
                 var token = await _userHelper.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = UrlEncoder.Default.Encode(token);
                 var link = Url.Action("ConfirmEmail", "Account",
                     new { userId = user.Id, token = encodedToken },
                     protocol: HttpContext.Request.Scheme);
 
-                // 4. Send email to user
+                // 4. Send the welcome email with the temporary password and confirmation link
                 var response = _mailHelper.SendEmail(
                     user.Email,
-                    "Confirm Your Account & Set Your Password - FredAuto",
+                    "Welcome to FredAuto - Your Account is Ready",
                     $"<h1>Welcome to FredAuto!</h1>" +
-                    $"<p>Your account has been created by an administrator. Please confirm your account and set your initial password by clicking the link below:</p>" +
-                    $"<p><a href='{link}'>Set My Password</a></p>"
+                    $"<p>An account has been created for you by an administrator.</p>" +
+                    $"<p>You can log in immediately using the following temporary password:</p>" +
+                    $"<h3 style='font-family: monospace; background-color: #f0f0f0; padding: 10px; border-radius: 5px;'>{tempPassword}</h3>" +
+                    $"<p>Before you begin, please confirm your email address by clicking the link below:</p>" +
+                    $"<p><a href='{link}' style='padding: 10px 15px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px;'>Confirm My Email Address</a></p>" +
+                    $"<p>For your security, we strongly recommend you change your password after your first login.</p>"
                 );
 
                 ViewBag.Message = response.IsSuccess
-                    ? "User created! An email was sent to the user to set their password."
-                    : "User created, but the confirmation email could not be sent.";
+                    ? "User created successfully! The user has been sent their temporary password and an email confirmation link."
+                    : "User created, but the welcome email could not be sent.";
 
-                // 5. Mechanic-specific redirect (after email is sent)
                 if (model.Role == "Mechanic")
                 {
-                    TempData["SuccessMessage"] = "Mechanic created! Now configure specialties and schedule.";
+                    TempData["SuccessMessage"] = "Mechanic created! Now configure their specialties and schedule.";
                     return RedirectToAction("Edit", "Mechanics", new { id = user.Id });
                 }
 
@@ -348,36 +362,6 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> ConfirmEmail(string userId, string token)
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
-            {
-                return View("Error");
-            }
-
-            var user = await _userHelper.GetUserByIdAsync(userId);
-            if (user == null)
-            {
-                return View("Error");
-            }
-
-            // FIX: Properly decode token
-            var decodedToken = System.Net.WebUtility.UrlDecode(token);
-
-            var result = await _userHelper.ConfirmEmailAsync(user, decodedToken);
-
-            if (!result.Succeeded)
-            {
-                ViewBag.Message = "Error: The confirmation link is invalid or has expired.";
-                return View();
-            }
-
-            var resetToken = await _userHelper.GeneratePasswordResetTokenAsync(user);
-            var encodedResetToken = UrlEncoder.Default.Encode(resetToken);
-
-            return RedirectToAction("ResetPassword", new { token = encodedResetToken, email = user.Email });
-        }
-
         [HttpGet]
         public IActionResult NotAuthorized()
         {
@@ -425,6 +409,83 @@ namespace OficinaMVC.Controllers
             }
 
             return BadRequest();
+        }
+
+        private static string GenerateRandomPassword(int length = 12)
+        {
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
+            var password = new StringBuilder();
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                var uintBuffer = new byte[sizeof(uint)];
+                for (int i = 0; i < length; i++)
+                {
+                    rng.GetBytes(uintBuffer);
+                    uint num = BitConverter.ToUInt32(uintBuffer, 0);
+                    password.Append(validChars[(int)(num % (uint)validChars.Length)]);
+                }
+            }
+            return password.ToString();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            {
+                ViewBag.Message = "Error: Invalid confirmation link. The link is missing required information.";
+                return View();
+            }
+
+            var user = await _userHelper.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                ViewBag.Message = "Error: User not found.";
+                return View();
+            }
+
+            // You can't confirm an email for a user who is already confirmed.
+            // This prevents re-using the link.
+            if (user.EmailConfirmed)
+            {
+                ViewBag.Message = "This email address has already been confirmed.";
+                return View();
+            }
+
+            var decodedToken = System.Net.WebUtility.UrlDecode(token);
+            var result = await _userHelper.ConfirmEmailAsync(user, decodedToken);
+
+            if (!result.Succeeded)
+            {
+                ViewBag.Message = "Error: The confirmation link is invalid or has expired. Your email could not be confirmed.";
+                return View();
+            }
+
+            // --- SUCCESS! ---
+            // This is the new key step: Automatically log the user in.
+
+            // We must build the claims identity correctly, just like in the Login method.
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim("FullName", user.FullName),
+                new Claim("ProfileImageUrl", user.ProfileImageUrl ?? "/images/default-profile.png")
+            };
+
+            var roles = await _userHelper.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Sign the user in with these claims. The 'isPersistent: false' means it's a session cookie.
+            await _signInManager.SignInWithClaimsAsync(user, isPersistent: false, claims);
+
+            ViewBag.Message = "Your email address has been successfully confirmed!";
+
+            // Now, render the view. The user is logged in.
+            return View();
         }
     }
 }
