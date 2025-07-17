@@ -17,10 +17,6 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
-}
-
 .btn-icon-text {
     display: inline-flex;
     align-items: center;
@@ -94,3 +90,88 @@ body {
     justify-content: center;
     background-color: #f4f7f6;
 }
+.dashboard-header {
+    background: linear-gradient(120deg, #ffffff 0%, #f0f5ff 100%);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 0.75rem 0; /* Reduced padding for more space */
+    margin-bottom: 1.5rem;
+}
+.main-content-container {
+    /* Vertical Margin: Double the previous mt-5 (3rem) -> 6rem */
+    margin-top: 6rem !important;
+    /* Horizontal Padding (our "margins") for smaller screens */
+    /* Double the previous px-4 (1.5rem) -> 3rem */
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+}
+
+/* On large screens and up (like the old px-lg-5) */
+@media (min-width: 992px) { /* 992px is the 'lg' breakpoint in Bootstrap 5 */
+    .main-content-container {
+        /* Double the previous px-lg-5 (3rem) -> 6rem */
+        padding-left: 6rem !important;
+        padding-right: 6rem !important;
+    }
+}
+
+#loading-overlay {
+    position: fixed; /* Sit on top of the page content */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+    backdrop-filter: blur(5px); /* Modern blur effect for browsers that support it */
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 9999; /* Ensure it's on top of everything else */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+    #loading-overlay.visible {
+        opacity: 1;
+    }
+
+    #loading-overlay .spinner-border {
+        width: 4rem;
+        height: 4rem;
+    }
+
+.progress-container {
+    background-color: white;
+    padding: 2rem 3rem;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+    width: 90%;
+    /* Increase max-width for a larger container */
+    max-width: 750px;
+    text-align: center;
+}
+
+    /* Increase font size for the heading */
+    .progress-container h4 {
+        font-size: 2.25rem; /* ~50% larger than default h4 */
+        margin-bottom: 1.5rem;
+    }
+
+    /* Increase height of the progress bar */
+    .progress-container .progress {
+        height: 38px; /* ~50% larger than the original 25px */
+        font-size: 1.25rem; /* Make the percentage text inside the bar larger */
+    }
+
+    /* Increase font size for the status text */
+    .progress-container #progress-text {
+        font-size: 1.5rem; /* ~50% larger */
+        margin-top: 1.25rem;
+    }
+
+    /* Increase size of the "Done" button */
+    .progress-container #progress-done-btn {
+        font-size: 1.25rem;
+        padding: 0.75rem 1.5rem;
+    }

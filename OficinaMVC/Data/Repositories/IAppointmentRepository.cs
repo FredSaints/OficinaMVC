@@ -4,6 +4,12 @@ namespace OficinaMVC.Data.Repositories
 {
     public interface IAppointmentRepository : IGenericRepository<Appointment>
     {
-        //TODO: Adicionar métodos específicos para o repositório de agendamentos, (slots disponiveis, etc)
+
+        Task<Appointment> GetByIdWithDetailsAsync(int appointmentId);
+        Task<IEnumerable<Appointment>> GetByClientIdAsync(string clientId, bool includeCompleted);
+        Task<IEnumerable<User>> GetAvailableMechanicsAsync(DateTime appointmentDate);
+        Task<IEnumerable<string>> GetUnavailableDaysAsync(int year, int month);
+        Task<bool> IsMechanicAvailableAtTimeAsync(string mechanicId, DateTime appointmentDate);
+        Task<Appointment> CreateAndReturnAsync(Appointment appointment);
     }
 }

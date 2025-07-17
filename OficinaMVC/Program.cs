@@ -104,6 +104,7 @@ internal class Program
         builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         builder.Services.AddScoped<IReminderService, ReminderService>();
         builder.Services.AddScoped<IViewRendererService, ViewRendererService>();
+        builder.Services.AddScoped<IBulkEmailService, BulkEmailService>();
 
         builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
         builder.Services.AddScoped<IPdfService, PdfService>();

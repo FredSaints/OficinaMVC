@@ -1,0 +1,97 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.Appointment>
+@{
+    ViewData["Title"] = "My Appointments";
+    var showCompleted = (bool?)ViewData["ShowCompleted"] ?? false;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-4 mb-3 gap-3">
+    <div class="me-auto">
+        <h2 class="mb-0 text-primary">
+            <i class="bi bi-calendar-heart-fill me-2"></i>@ViewData["Title"]
+        </h2>
+        <p class="text-muted mb-0">Here is a list of your appointments.</p>
+    </div>
+
+    <!-- Filter Toggle -->
+    <form asp-action="MyAppointments" method="get" class="d-flex align-items-center">
+        <div class="form-check form-switch fs-5">
+            <input class="form-check-input" type="checkbox" role="switch" id="showCompletedSwitch" name="showCompleted" value="true" @(showCompleted ? "checked" : "") onchange="this.form.submit()">
+            <label class="form-check-label" for="showCompletedSwitch">Show Completed</label>
+        </div>
+    </form>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5">
+                <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                @if (showCompleted)
+                {
+                    <p class="lead text-muted mt-2">You have no appointment history.</p>
+                }
+                else
+                {
+                    <p class="lead text-muted mt-2">You have no upcoming appointments.</p>
+                }
+                <a asp-controller="Appointment" asp-action="Create" class="btn btn-primary mt-2">Book an Appointment</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Vehicle</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">@item.Date.ToString("D")</div>
+                                    <div class="small text-muted">@item.Date.ToString("t")</div>
+                                </td>
+                                <td>@item.Vehicle.LicensePlate</td>
+                                <td>@item.ServiceType</td>
+                                <td>
+                                    @if (item.Status == "Completed")
+                                    {
+                                        <span class="badge rounded-pill bg-success">@item.Status</span>
+                                    }
+                                    else if (item.Status == "Pending")
+                                    {
+                                        <span class="badge rounded-pill bg-info text-dark">@item.Status</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-secondary">@item.Status</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    @if (item.RepairId.HasValue)
+                                    {
+                                        <a asp-controller="Vehicle" asp-action="History" asp-route-id="@item.VehicleId" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-search"></i> View Repair
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">No repair started</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

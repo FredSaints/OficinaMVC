@@ -2,46 +2,58 @@
     ViewData["Title"] = "Communication Hub";
 }
 
-<div class="container mt-4">
-    <div class="text-center">
-        <h1 class="display-4 text-primary"><i class="bi bi-broadcast-pin me-2"></i>@ViewData["Title"]</h1>
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 text-primary">
+            <i class="bi bi-broadcast-pin me-2"></i>@ViewData["Title"]
+        </h1>
         <p class="lead text-muted">Select a communication task to perform.</p>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i>
             @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <div class="row g-4 justify-content-center mt-4">
+    <div class="row g-4 justify-content-center">
         <!-- Card for General Announcement -->
         <div class="col-md-6 col-lg-5">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column text-center">
-                    <div class="mb-3"><i class="bi bi-megaphone-fill text-primary fs-1"></i></div>
+            <div class="card h-100 shadow-sm text-center">
+                <div class="card-body p-5 d-flex flex-column">
+                    <div class="mb-4">
+                        <i class="bi bi-megaphone-fill text-primary" style="font-size: 4rem;"></i>
+                    </div>
                     <h4 class="card-title">Send Announcement</h4>
-                    <p class="card-text text-muted">Send a general email message to all registered clients. Useful for workshop closure notices or promotions.</p>
-                    <div class="mt-auto">
-                        <a asp-action="SendAnnouncement" class="btn btn-primary px-4">Go to Sender</a>
+                    <p class="card-text text-muted flex-grow-1">
+                        Send a general email message to all registered clients. Useful for workshop closure notices or promotions.
+                    </p>
+                    <div class="mt-4">
+                        <a asp-action="SendAnnouncement" class="btn btn-primary btn-lg px-4">Go to Sender</a>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Card for Bulk Cancellation -->
         <div class="col-md-6 col-lg-5">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column text-center">
-                    <div class="mb-3"><i class="bi bi-calendar-x-fill text-danger fs-1"></i></div>
+            <div class="card h-100 shadow-sm text-center">
+                <div class="card-body p-5 d-flex flex-column">
+                    <div class="mb-4">
+                        <i class="bi bi-calendar-x-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
                     <h4 class="card-title">Bulk Cancel Appointments</h4>
-                    <p class="card-text text-muted">Cancel all upcoming appointments for a specific mechanic in case of an emergency and notify clients.</p>
-                    <div class="mt-auto">
-                        <a asp-action="BulkCancel" class="btn btn-danger px-4">Go to Canceller</a>
+                    <p class="card-text text-muted flex-grow-1">
+                        Cancel all upcoming appointments for a specific mechanic in case of an emergency and notify clients.
+                    </p>
+                    <div class="mt-4">
+                        <a asp-action="BulkCancel" class="btn btn-danger btn-lg px-4">Go to Canceller</a>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 </div>

@@ -59,10 +59,9 @@ namespace OficinaMVC.Controllers
                     var claims = new List<Claim>
             {
                 // Add the essential claims for the user's identity
-                new Claim(ClaimTypes.Name, user.Email), // This will populate User.Identity.Name
-                new Claim(ClaimTypes.NameIdentifier, user.Id), // This is crucial for user ID lookups
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
 
-                // Your custom claims are still good
                 new Claim("FullName", user.FullName),
                 new Claim("ProfileImageUrl", user.ProfileImageUrl ?? "/images/default-profile.png")
             };

@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OficinaMVC.Data;
 using OficinaMVC.Helpers;
 using OficinaMVC.Models.Communication;
+using OficinaMVC.Services;
 
 namespace OficinaMVC.Controllers
 {
@@ -14,12 +16,17 @@ namespace OficinaMVC.Controllers
         private readonly IUserHelper _userHelper;
         private readonly IMailHelper _mailHelper;
         private readonly DataContext _context;
+        private readonly IBackgroundJobClient _backgroundJobClient;
 
-        public CommunicationController(IUserHelper userHelper, IMailHelper mailHelper, DataContext context)
+        public CommunicationController(IUserHelper userHelper,
+                                       IMailHelper mailHelper,
+                                       DataContext context,
+                                       IBackgroundJobClient backgroundJobClient)
         {
             _userHelper = userHelper;
             _mailHelper = mailHelper;
             _context = context;
+            _backgroundJobClient = backgroundJobClient;
         }
 
         public IActionResult Index()
@@ -36,27 +43,28 @@ namespace OficinaMVC.Controllers
         // POST: /Communication/SendAnnouncement
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendAnnouncement(CommunicationViewModel model)
+        public async Task<IActionResult> SendAnnouncement(CommunicationViewModel model, [FromHeader(Name = "X-SignalR-Connection-Id")] string connectionId)
         {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                // This is a safeguard. The client should always send its connection ID.
+                return BadRequest("SignalR connection ID is missing.");
+            }
+
             if (ModelState.IsValid)
             {
                 var clients = await _userHelper.GetUsersInRoleAsync("Client");
-                int successCount = 0;
+                var clientEmails = clients.Select(c => c.Email).ToList();
 
-                foreach (var client in clients)
-                {
-                    var response = _mailHelper.SendEmail(client.Email, model.Subject, model.Message);
-                    if (response.IsSuccess)
-                    {
-                        successCount++;
-                    }
-                }
+                // Enqueue the background job, passing all necessary data
+                _backgroundJobClient.Enqueue<IBulkEmailService>(service =>
+                    service.SendAnnouncements(clientEmails, model.Subject, model.Message, connectionId));
 
-                TempData["SuccessMessage"] = $"Announcement sent successfully to {successCount} out of {clients.Count} clients.";
-                return RedirectToAction(nameof(Index));
+                // Return an immediate success response to the AJAX call
+                return Ok(new { message = "Email job has been successfully queued." });
             }
 
-            return View(model);
+            return BadRequest(ModelState);
         }
 
         // GET: /Communication/BulkCancel
