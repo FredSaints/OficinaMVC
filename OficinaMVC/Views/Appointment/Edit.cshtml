@@ -40,7 +40,7 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="AppointmentDate" class="form-label"></label>
-                            <input asp-for="AppointmentDate" class="form-control form-control-lg" id="AppointmentDate" />
+                            <input asp-for="AppointmentDate" asp-format="{0:yyyy-MM-dd HH:mm}" class="form-control form-control-lg" id="AppointmentDate" />
                             <span id="time-validation-message" class="text-danger d-block mt-1 small"></span>
                             <span asp-validation-for="AppointmentDate" class="text-danger small"></span>
                         </div>

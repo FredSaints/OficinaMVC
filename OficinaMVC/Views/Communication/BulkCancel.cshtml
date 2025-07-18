@@ -3,18 +3,27 @@
     ViewData["Title"] = "Bulk Cancel Appointments";
 }
 
+<div id="loading-overlay" class="d-none">
+    <div class="progress-container">
+        <h4 class="text-danger">Cancelling Appointments...</h4>
+        <div class="progress" style="height: 25px;" role="progressbar" aria-label="Cancellation progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" style="width: 0%;">0%</div>
+        </div>
+        <p id="progress-text" class="mt-2 text-muted">Initializing...</p>
+        <button id="progress-done-btn" class="btn btn-success mt-3 d-none">Done</button>
+    </div>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-lg-7">
-        <form asp-action="BulkCancelConfirmed" method="post" class="card shadow-lg border-0 mt-4">
+        <form asp-action="BulkCancelConfirmed" method="post" id="cancel-form" class="card shadow-lg border-0 mt-4">
             <div class="card-header bg-danger text-white py-3">
                 <h2 class="mb-0 text-center"><i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewData["Title"]</h2>
             </div>
             <div class="card-body p-4 p-md-5">
                 <p class="lead text-center">Select a mechanic to cancel all of their upcoming appointments. This action will send a notification email to each affected client.</p>
                 <hr class="my-4" />
-
                 <div asp-validation-summary="All" class="alert alert-danger"></div>
-
                 <div class="mb-3">
                     <label asp-for="MechanicId" class="form-label fs-5"></label>
                     <select asp-for="MechanicId" asp-items="Model.Mechanics" class="form-select form-select-lg">
@@ -26,10 +35,86 @@
                 <a asp-action="Index" class="btn btn-secondary btn-lg px-4 me-2">
                     <i class="bi bi-x-lg me-1"></i> Back
                 </a>
-                <button type="submit" class="btn btn-danger btn-lg px-5">
+                <button type="submit" id="cancel-button" class="btn btn-danger btn-lg px-5">
                     <i class="bi bi-calendar-x me-1"></i> Cancel Appointments
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById('cancel-form');
+            const cancelButton = document.getElementById('cancel-button');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const doneButton = document.getElementById('progress-done-btn');
+
+            const connection = new signalR.HubConnectionBuilder().withUrl("/notificationHub").build();
+
+            connection.on("progressUpdate", (progress, sent, total) => {
+                const progressVal = Math.round(progress);
+                progressBar.style.width = progressVal + '%';
+                progressBar.textContent = progressVal + '%';
+                progressBar.setAttribute('aria-valuenow', progressVal);
+                progressText.textContent = `Processed ${sent} of ${total} appointments...`;
+            });
+
+            connection.on("progressComplete", (message) => {
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'bg-danger');
+                progressBar.classList.add('bg-success');
+                progressText.textContent = message;
+                doneButton.classList.remove('d-none');
+            });
+
+            async function initialize() {
+                try {
+                    await connection.start();
+                    cancelButton.disabled = false;
+                } catch (err) { console.error("SignalR Connection Error: ", err.toString()); }
+            }
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if ($(form).valid()) {
+                    if (connection.state !== signalR.HubConnectionState.Connected) {
+                        alert("Still connecting, please wait a moment and try again.");
+                        return;
+                    }
+                    cancelButton.disabled = true;
+                    loadingOverlay.classList.remove('d-none');
+                    setTimeout(() => loadingOverlay.classList.add('visible'), 10);
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        headers: { 'X-SignalR-Connection-Id': connection.connectionId },
+                        success: function(response) { console.log(response.message); },
+                        error: function(xhr) {
+                            alert('Failed to start job: ' + (xhr.responseJSON?.message || xhr.responseText));
+                            loadingOverlay.classList.add('d-none');
+                            cancelButton.disabled = false;
+                        }
+                    });
+                }
+            });
+
+            doneButton.addEventListener('click', function() {
+                window.location.href = '@Url.Action("Index", "Communication")';
+            });
+
+            cancelButton.disabled = true;
+            initialize();
+        });
+    </script>
+}

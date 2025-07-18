@@ -7,5 +7,8 @@ namespace OficinaMVC.Data.Repositories
     {
         Task<IEnumerable<CarModel>> GetAllWithBrandAsync();
         Task<IEnumerable<SelectListItem>> GetCombo(int brandId);
+        Task<bool> ExistsByNameAndBrandAsync(string name, int brandId);
+        Task<bool> ExistsForEditAsync(int id, string name, int brandId);
+        Task<bool> IsInUseAsync(int id);
     }
 }

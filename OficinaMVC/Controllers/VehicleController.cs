@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Helpers;
@@ -17,45 +15,32 @@ namespace OficinaMVC.Controllers
         private readonly IUserHelper _userHelper;
         private readonly IBrandRepository _brandRepo;
         private readonly ICarModelRepository _carModelRepo;
-        private readonly DataContext _context;
 
         public VehicleController(
             IVehicleRepository vehicleRepo,
             IUserHelper userHelper,
             IBrandRepository brandRepo,
-            ICarModelRepository carModelRepo,
-            DataContext context)
+            ICarModelRepository carModelRepo)
         {
             _vehicleRepo = vehicleRepo;
             _userHelper = userHelper;
             _brandRepo = brandRepo;
             _carModelRepo = carModelRepo;
-            _context = context;
         }
 
         // GET: Vehicle
         public async Task<IActionResult> Index(string searchString)
         {
             var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-
-            IQueryable<Vehicle> query = _context.Vehicles
-                .Include(v => v.Owner)
-                .Include(v => v.CarModel)
-                .ThenInclude(cm => cm.Brand);
-
-            if (User.IsInRole("Client"))
+            if (user == null)
             {
-                query = query.Where(v => v.OwnerId == user.Id);
+                return Unauthorized();
             }
 
-            if (!String.IsNullOrEmpty(searchString))
-            {
-                query = query.Where(v => v.LicensePlate.Contains(searchString));
-            }
+            var isClient = User.IsInRole("Client");
+            var vehicles = await _vehicleRepo.GetFilteredVehiclesAsync(user.Id, isClient, searchString);
 
             ViewData["CurrentFilter"] = searchString;
-
-            var vehicles = await query.OrderBy(v => v.LicensePlate).ToListAsync();
 
             var model = vehicles.Select(v => new VehicleListViewModel
             {
@@ -79,8 +64,12 @@ namespace OficinaMVC.Controllers
             if (vehicle == null) return NotFound();
 
             var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+            if (user == null) return Forbid();
+
             if (User.IsInRole("Mechanic") || User.IsInRole("Receptionist") || (User.IsInRole("Client") && vehicle.OwnerId == user.Id))
+            {
                 return View(vehicle);
+            }
 
             return Forbid();
         }
@@ -98,7 +87,7 @@ namespace OficinaMVC.Controllers
             if (User.IsInRole("Client"))
             {
                 var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-                if (vehicle.OwnerId != user.Id)
+                if (user == null || vehicle.OwnerId != user.Id)
                 {
                     return Forbid();
                 }
@@ -109,12 +98,8 @@ namespace OficinaMVC.Controllers
         [Authorize(Roles = "Mechanic,Receptionist")]
         public async Task<IActionResult> Create()
         {
-            var model = new VehicleViewModel
-            {
-                OwnerList = await GetClientSelectListAsync(),
-                Brands = await _brandRepo.GetCombo(),
-                CarModels = new SelectList(Enumerable.Empty<SelectListItem>())
-            };
+            var model = new VehicleViewModel();
+            await RepopulateDropdowns(model);
             return View(model);
         }
 
@@ -123,37 +108,36 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(VehicleViewModel model)
         {
-            var existingVehicle = await _context.Vehicles
-                .FirstOrDefaultAsync(v => v.LicensePlate == model.LicensePlate);
-
-            if (existingVehicle != null)
-            {
-                ModelState.AddModelError("LicensePlate", "A vehicle with this license plate already exists.");
-            }
-
             ModelState.Remove("Brands");
             ModelState.Remove("CarModels");
             ModelState.Remove("OwnerList");
 
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                await RepopulateDropdowns(model);
-                return View(model);
+                if (await _vehicleRepo.ExistsByLicensePlateAsync(model.LicensePlate))
+                {
+                    ModelState.AddModelError("LicensePlate", "A vehicle with this license plate already exists.");
+                }
+                else
+                {
+                    var vehicle = new Vehicle
+                    {
+                        LicensePlate = model.LicensePlate,
+                        CarModelId = model.CarModelId,
+                        Year = model.Year,
+                        Mileage = model.Mileage,
+                        FuelType = model.FuelType,
+                        OwnerId = model.OwnerId
+                    };
+
+                    await _vehicleRepo.CreateAsync(vehicle);
+                    TempData["SuccessMessage"] = "Vehicle created successfully!";
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
-            var vehicle = new Vehicle
-            {
-                LicensePlate = model.LicensePlate,
-                CarModelId = model.CarModelId,
-                Year = model.Year,
-                Mileage = model.Mileage,
-                FuelType = model.FuelType,
-                OwnerId = model.OwnerId
-            };
-
-            await _vehicleRepo.CreateAsync(vehicle);
-            TempData["SuccessMessage"] = "Vehicle created successfully!"; // Added for better UX
-            return RedirectToAction(nameof(Index));
+            await RepopulateDropdowns(model);
+            return View(model);
         }
 
         [Authorize(Roles = "Mechanic,Receptionist,Client")]
@@ -165,7 +149,7 @@ namespace OficinaMVC.Controllers
             if (User.IsInRole("Client"))
             {
                 var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-                if (vehicle.OwnerId != user.Id)
+                if (user == null || vehicle.OwnerId != user.Id)
                 {
                     return Forbid();
                 }
@@ -183,16 +167,7 @@ namespace OficinaMVC.Controllers
                 CarModelId = vehicle.CarModelId,
             };
 
-            if (!User.IsInRole("Client"))
-            {
-                await RepopulateDropdowns(model);
-            }
-            else
-            {
-                model.Brands = await _brandRepo.GetCombo();
-                model.CarModels = await _carModelRepo.GetCombo(model.BrandId);
-            }
-
+            await RepopulateDropdowns(model);
             return View(model);
         }
 
@@ -201,47 +176,48 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(VehicleViewModel model)
         {
-            // The modelstate removals are still necessary
             ModelState.Remove("Brands");
             ModelState.Remove("CarModels");
             ModelState.Remove("OwnerList");
 
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                // Repopulate dropdowns for both roles on failure
-                await RepopulateDropdowns(model);
-                return View(model);
-            }
-
-            var vehicle = await _vehicleRepo.GetByIdAsync(model.Id);
-            if (vehicle == null) return NotFound();
-
-            // --- SECURITY CHECK ---
-            if (User.IsInRole("Client"))
-            {
-                var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-                if (vehicle.OwnerId != user.Id)
+                if (await _vehicleRepo.ExistsByLicensePlateForEditAsync(model.Id, model.LicensePlate))
                 {
-                    return Forbid();
+                    ModelState.AddModelError("LicensePlate", "A vehicle with this license plate already exists.");
+                }
+                else
+                {
+                    var vehicle = await _vehicleRepo.GetByIdAsync(model.Id);
+                    if (vehicle == null) return NotFound();
+
+                    if (User.IsInRole("Client"))
+                    {
+                        var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+                        if (user == null || vehicle.OwnerId != user.Id)
+                        {
+                            return Forbid();
+                        }
+                    }
+
+                    vehicle.LicensePlate = model.LicensePlate;
+                    vehicle.CarModelId = model.CarModelId;
+                    vehicle.Year = model.Year;
+                    vehicle.Mileage = model.Mileage;
+                    vehicle.FuelType = model.FuelType;
+
+                    if (!User.IsInRole("Client"))
+                    {
+                        vehicle.OwnerId = model.OwnerId;
+                    }
+
+                    await _vehicleRepo.UpdateAsync(vehicle);
+                    TempData["SuccessMessage"] = "Vehicle updated successfully!";
+                    return RedirectToAction(nameof(Index));
                 }
             }
-            // --- END SECURITY CHECK ---
-
-            vehicle.LicensePlate = model.LicensePlate;
-            vehicle.CarModelId = model.CarModelId;
-            vehicle.Year = model.Year;
-            vehicle.Mileage = model.Mileage;
-            vehicle.FuelType = model.FuelType;
-
-            // Only allow staff to change the owner
-            if (!User.IsInRole("Client"))
-            {
-                vehicle.OwnerId = model.OwnerId;
-            }
-
-            await _vehicleRepo.UpdateAsync(vehicle);
-            TempData["SuccessMessage"] = "Vehicle updated successfully!";
-            return RedirectToAction(nameof(Index));
+            await RepopulateDropdowns(model);
+            return View(model);
         }
 
         [Authorize(Roles = "Mechanic,Receptionist")]
@@ -258,15 +234,9 @@ namespace OficinaMVC.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var vehicle = await _vehicleRepo.GetByIdWithDetailsAsync(id);
-            if (vehicle == null)
-            {
-                return NotFound();
-            }
+            if (vehicle == null) return NotFound();
 
-            bool hasAppointments = await _context.Appointments.AnyAsync(a => a.VehicleId == id);
-            bool hasRepairs = await _context.Repairs.AnyAsync(r => r.VehicleId == id);
-
-            if (hasAppointments || hasRepairs)
+            if (await _vehicleRepo.IsInUseAsync(id))
             {
                 ViewData["ReturnController"] = "Vehicle";
                 ViewData["ReturnAction"] = "Index";
@@ -305,11 +275,19 @@ namespace OficinaMVC.Controllers
 
         private async Task RepopulateDropdowns(VehicleViewModel model)
         {
-            model.OwnerList = await GetClientSelectListAsync(model.OwnerId);
-            model.Brands = await _brandRepo.GetCombo();
-            model.CarModels = model.BrandId > 0
-                ? await _carModelRepo.GetCombo(model.BrandId)
-                : new SelectList(Enumerable.Empty<SelectListItem>());
+            if (User.IsInRole("Client"))
+            {
+                model.Brands = await _brandRepo.GetCombo();
+                model.CarModels = await _carModelRepo.GetCombo(model.BrandId);
+            }
+            else
+            {
+                model.OwnerList = await GetClientSelectListAsync(model.OwnerId);
+                model.Brands = await _brandRepo.GetCombo();
+                model.CarModels = model.BrandId > 0
+                    ? await _carModelRepo.GetCombo(model.BrandId)
+                    : new SelectList(Enumerable.Empty<SelectListItem>());
+            }
         }
         #endregion
     }

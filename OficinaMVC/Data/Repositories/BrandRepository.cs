@@ -36,5 +36,15 @@ namespace OficinaMVC.Data.Repositories
                 .Include(b => b.CarModels)
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
+
+        public async Task<bool> ExistsByNameAsync(string name)
+        {
+            return await _context.Brands.AnyAsync(b => b.Name == name);
+        }
+
+        public async Task<bool> ExistsForEditAsync(int id, string name)
+        {
+            return await _context.Brands.AnyAsync(b => b.Name == name && b.Id != id);
+        }
     }
 }

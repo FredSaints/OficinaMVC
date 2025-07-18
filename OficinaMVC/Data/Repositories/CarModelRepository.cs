@@ -38,5 +38,20 @@ namespace OficinaMVC.Data.Repositories
 
             return list;
         }
+
+        public async Task<bool> ExistsByNameAndBrandAsync(string name, int brandId)
+        {
+            return await _context.CarModels.AnyAsync(m => m.Name == name && m.BrandId == brandId);
+        }
+
+        public async Task<bool> ExistsForEditAsync(int id, string name, int brandId)
+        {
+            return await _context.CarModels.AnyAsync(m => m.Name == name && m.BrandId == brandId && m.Id != id);
+        }
+
+        public async Task<bool> IsInUseAsync(int id)
+        {
+            return await _context.Vehicles.AnyAsync(v => v.CarModelId == id);
+        }
     }
 }

@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 
@@ -11,12 +9,10 @@ namespace OficinaMVC.Controllers
     public class SpecialtyController : Controller
     {
         private readonly ISpecialtyRepository _specialtyRepository;
-        private readonly DataContext _context;
 
-        public SpecialtyController(ISpecialtyRepository specialtyRepository, DataContext context)
+        public SpecialtyController(ISpecialtyRepository specialtyRepository)
         {
             _specialtyRepository = specialtyRepository;
-            _context = context;
         }
 
         // GET: Specialty
@@ -37,16 +33,17 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Specialty model)
         {
-            var exists = await _context.Specialties.AnyAsync(s => s.Name == model.Name);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A specialty with this name already exists.");
-            }
-
             if (ModelState.IsValid)
             {
-                await _specialtyRepository.CreateAsync(model);
-                return RedirectToAction(nameof(Index));
+                if (await _specialtyRepository.ExistsByNameAsync(model.Name))
+                {
+                    ModelState.AddModelError("Name", "A specialty with this name already exists.");
+                }
+                else
+                {
+                    await _specialtyRepository.CreateAsync(model);
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(model);
         }
@@ -66,16 +63,17 @@ namespace OficinaMVC.Controllers
         {
             if (id != model.Id) return NotFound();
 
-            var exists = await _context.Specialties.AnyAsync(s => s.Name == model.Name && s.Id != id);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A specialty with this name already exists.");
-            }
-
             if (ModelState.IsValid)
             {
-                await _specialtyRepository.UpdateAsync(model);
-                return RedirectToAction(nameof(Index));
+                if (await _specialtyRepository.ExistsForEditAsync(id, model.Name))
+                {
+                    ModelState.AddModelError("Name", "A specialty with this name already exists.");
+                }
+                else
+                {
+                    await _specialtyRepository.UpdateAsync(model);
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(model);
         }
@@ -95,8 +93,7 @@ namespace OficinaMVC.Controllers
             var specialty = await _specialtyRepository.GetByIdAsync(id);
             if (specialty == null) return NotFound();
 
-            var hasReferences = await _context.UserSpecialties.AnyAsync(us => us.SpecialtyId == id);
-            if (hasReferences)
+            if (await _specialtyRepository.IsInUseAsync(id))
             {
                 ViewData["ReturnController"] = "Specialty";
                 ViewData["ReturnAction"] = "Index";
@@ -104,18 +101,8 @@ namespace OficinaMVC.Controllers
                 return View("DeleteConfirmationError", specialty);
             }
 
-            try
-            {
-                await _specialtyRepository.DeleteAsync(specialty);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException)
-            {
-                ViewData["ReturnController"] = "Specialty";
-                ViewData["ReturnAction"] = "Index";
-                ModelState.AddModelError("", "Cannot delete this specialty because it is assigned to one or more mechanics.");
-                return View("DeleteConfirmationError", specialty);
-            }
+            await _specialtyRepository.DeleteAsync(specialty);
+            return RedirectToAction(nameof(Index));
         }
     }
 }

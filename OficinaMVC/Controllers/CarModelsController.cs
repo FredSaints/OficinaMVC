@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 using OficinaMVC.Models.Vehicles;
@@ -13,13 +11,11 @@ namespace OficinaMVC.Controllers
     {
         private readonly ICarModelRepository _carModelRepository;
         private readonly IBrandRepository _brandRepository;
-        private readonly DataContext _context;
 
-        public CarModelsController(ICarModelRepository carModelRepository, IBrandRepository brandRepository, DataContext context)
+        public CarModelsController(ICarModelRepository carModelRepository, IBrandRepository brandRepository)
         {
             _carModelRepository = carModelRepository;
             _brandRepository = brandRepository;
-            _context = context;
         }
 
         // GET: CarModels
@@ -33,7 +29,6 @@ namespace OficinaMVC.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Brands = await _brandRepository.GetCombo();
-
             var viewModel = new CarModelViewModel();
             return View(viewModel);
         }
@@ -43,21 +38,22 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CarModelViewModel viewModel)
         {
-            var exists = await _context.CarModels.AnyAsync(m => m.Name == viewModel.Name && m.BrandId == viewModel.BrandId);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
-            }
-
             if (ModelState.IsValid)
             {
-                var carModel = new CarModel
+                if (await _carModelRepository.ExistsByNameAndBrandAsync(viewModel.Name, viewModel.BrandId))
                 {
-                    Name = viewModel.Name,
-                    BrandId = viewModel.BrandId
-                };
-                await _carModelRepository.CreateAsync(carModel);
-                return RedirectToAction(nameof(Index));
+                    ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
+                }
+                else
+                {
+                    var carModel = new CarModel
+                    {
+                        Name = viewModel.Name,
+                        BrandId = viewModel.BrandId
+                    };
+                    await _carModelRepository.CreateAsync(carModel);
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             ViewBag.Brands = await _brandRepository.GetCombo();
@@ -74,7 +70,6 @@ namespace OficinaMVC.Controllers
             }
 
             ViewBag.Brands = await _brandRepository.GetCombo();
-
             var viewModel = new CarModelViewModel
             {
                 Id = carModel.Id,
@@ -94,22 +89,23 @@ namespace OficinaMVC.Controllers
                 return BadRequest();
             }
 
-            var exists = await _context.CarModels.AnyAsync(m => m.Name == viewModel.Name && m.BrandId == viewModel.BrandId && m.Id != id);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
-            }
-
             if (ModelState.IsValid)
             {
-                var carModel = new CarModel
+                if (await _carModelRepository.ExistsForEditAsync(id, viewModel.Name, viewModel.BrandId))
                 {
-                    Id = viewModel.Id,
-                    Name = viewModel.Name,
-                    BrandId = viewModel.BrandId
-                };
-                await _carModelRepository.UpdateAsync(carModel);
-                return RedirectToAction(nameof(Index));
+                    ModelState.AddModelError("Name", "A model with this name already exists for this brand.");
+                }
+                else
+                {
+                    var carModel = new CarModel
+                    {
+                        Id = viewModel.Id,
+                        Name = viewModel.Name,
+                        BrandId = viewModel.BrandId
+                    };
+                    await _carModelRepository.UpdateAsync(carModel);
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             ViewBag.Brands = await _brandRepository.GetCombo();
@@ -133,22 +129,21 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var carModel = await _carModelRepository.GetByIdAsync(id);
-            if (carModel == null)
-            {
-                return NotFound();
-            }
-
-            var hasVehicles = await _context.Vehicles.AnyAsync(v => v.CarModelId == id);
-            if (hasVehicles)
+            if (await _carModelRepository.IsInUseAsync(id))
             {
                 ViewData["ReturnController"] = "CarModels";
                 ViewData["ReturnAction"] = "Index";
                 ModelState.AddModelError(string.Empty, "This model cannot be deleted because it is assigned to one or more vehicles.");
-                return View("DeleteConfirmationError", carModel);
+                var carModelForError = await _carModelRepository.GetByIdAsync(id);
+                return View("DeleteConfirmationError", carModelForError);
             }
 
-            await _carModelRepository.DeleteAsync(carModel);
+            var carModel = await _carModelRepository.GetByIdAsync(id);
+            if (carModel != null)
+            {
+                await _carModelRepository.DeleteAsync(carModel);
+            }
+
             return RedirectToAction(nameof(Index));
         }
     }

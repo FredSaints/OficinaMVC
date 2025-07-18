@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OficinaMVC.Data;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Data.Repositories;
 
@@ -11,12 +9,10 @@ namespace OficinaMVC.Controllers
     public class RepairTypeController : Controller
     {
         private readonly IRepairTypeRepository _repository;
-        private readonly DataContext _context;
 
-        public RepairTypeController(IRepairTypeRepository repository, DataContext dataContext)
+        public RepairTypeController(IRepairTypeRepository repository)
         {
             _repository = repository;
-            _context = dataContext;
         }
 
         public async Task<IActionResult> Index()
@@ -34,16 +30,17 @@ namespace OficinaMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RepairType model)
         {
-            var exists = await _context.RepairTypes.AnyAsync(rt => rt.Name == model.Name);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A repair type with this name already exists.");
-            }
-
             if (ModelState.IsValid)
             {
-                await _repository.CreateAsync(model);
-                return RedirectToAction(nameof(Index));
+                if (await _repository.ExistsByNameAsync(model.Name))
+                {
+                    ModelState.AddModelError("Name", "A repair type with this name already exists.");
+                }
+                else
+                {
+                    await _repository.CreateAsync(model);
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(model);
         }
@@ -61,16 +58,17 @@ namespace OficinaMVC.Controllers
         {
             if (id != model.Id) return NotFound();
 
-            var exists = await _context.RepairTypes.AnyAsync(rt => rt.Name == model.Name && rt.Id != id);
-            if (exists)
-            {
-                ModelState.AddModelError("Name", "A repair type with this name already exists.");
-            }
-
             if (ModelState.IsValid)
             {
-                await _repository.UpdateAsync(model);
-                return RedirectToAction(nameof(Index));
+                if (await _repository.ExistsForEditAsync(id, model.Name))
+                {
+                    ModelState.AddModelError("Name", "A repair type with this name already exists.");
+                }
+                else
+                {
+                    await _repository.UpdateAsync(model);
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(model);
         }
@@ -89,8 +87,7 @@ namespace OficinaMVC.Controllers
             var type = await _repository.GetByIdAsync(id);
             if (type == null) return NotFound();
 
-            var isTypeUsed = await _context.Appointments.AnyAsync(a => a.ServiceType == type.Name);
-            if (isTypeUsed)
+            if (await _repository.IsInUseAsync(type.Name))
             {
                 ViewData["ReturnController"] = "RepairType";
                 ViewData["ReturnAction"] = "Index";

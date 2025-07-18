@@ -5,17 +5,9 @@ namespace OficinaMVC.Data.Repositories
 {
     public interface IBrandRepository : IGenericRepository<Brand>
     {
-        /// <summary>
-        /// Gets a collection of brands formatted for use in a dropdown list.
-        /// </summary>
-        /// <returns>An IEnumerable of SelectListItem.</returns>
         Task<IEnumerable<SelectListItem>> GetCombo();
-
-        /// <summary>
-        /// Gets a brand by its ID, including its collection of associated CarModels.
-        /// </summary>
-        /// <param name="brandId">The ID of the brand.</param>
-        /// <returns>The Brand entity with its CarModels, or null if not found.</returns>
-        Task<Brand> GetByIdWithModelsAsync(int brandId);
+        Task<Brand> GetByIdWithModelsAsync(int id);
+        Task<bool> ExistsByNameAsync(string name);
+        Task<bool> ExistsForEditAsync(int id, string name);
     }
 }

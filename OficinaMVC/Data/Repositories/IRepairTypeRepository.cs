@@ -4,6 +4,8 @@ namespace OficinaMVC.Data.Repositories
 {
     public interface IRepairTypeRepository : IGenericRepository<RepairType>
     {
-        // Add any extra methods specific to RepairType if needed
+        Task<bool> ExistsByNameAsync(string name);
+        Task<bool> ExistsForEditAsync(int id, string name);
+        Task<bool> IsInUseAsync(string typeName);
     }
 }

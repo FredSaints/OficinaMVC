@@ -84,7 +84,7 @@ namespace OficinaMVC.Controllers
             return View(appointments);
         }
 
-        // GET: Appointment/My
+        // GET: Appointment/MyAppointments
         [Authorize(Roles = "Client")]
         public async Task<IActionResult> MyAppointments(bool showCompleted = false)
         {
@@ -94,7 +94,7 @@ namespace OficinaMVC.Controllers
             var appointments = await _appointmentRepo.GetByClientIdAsync(user.Id, showCompleted);
 
             ViewData["ShowCompleted"] = showCompleted;
-            return View("My", appointments);
+            return View("MyAppointments", appointments);
         }
 
         // GET: Appointment/Create

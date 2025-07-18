@@ -4,6 +4,8 @@ namespace OficinaMVC.Data.Repositories
 {
     public interface ISpecialtyRepository : IGenericRepository<Specialty>
     {
-        // TODO: Adicionar métodos se necessário, como GetByNameAsync, etc.
+        Task<bool> ExistsByNameAsync(string name);
+        Task<bool> ExistsForEditAsync(int id, string name);
+        Task<bool> IsInUseAsync(int id);
     }
 }

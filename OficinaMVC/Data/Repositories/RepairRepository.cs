@@ -216,5 +216,12 @@ namespace OficinaMVC.Data.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<RepairPart> GetRepairPartByIdAsync(int repairPartId)
+        {
+            return await _context.RepairParts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(rp => rp.Id == repairPartId);
+        }
     }
 }
