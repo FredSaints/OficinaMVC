@@ -26,9 +26,9 @@ jobs:
     - name: Publish Application
       run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-build -o ./publish
 
-    # --- THIS IS THE CORRECTED DEPLOYMENT STEP ---
+    # --- THIS IS THE FINAL, CORRECTED DEPLOYMENT STEP ---
     - name: Deploy to MonsterASP.net via WebDeploy
-      uses: AkhileshNS/msdeploy-publish@v2.0
+      uses: WebAppDeploy/web-deploy@v3.0.1
       with:
         server-url: ${{ secrets.SERVER_COMPUTER_NAME }}
         website-name: ${{ secrets.WEBSITE_NAME }}
