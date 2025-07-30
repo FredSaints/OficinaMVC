@@ -20,8 +20,13 @@ jobs:
     - name: Restore, Build, and Publish
       run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release -o ./publish
 
-    - name: Deploy to MonsterASP.net using Publish Profile
-      uses: microsoft/webapps-deploy@v2
+    - name: Deploy to MonsterASP.net via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
-        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        package: './publish'
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./publish/wwwroot/
+        server-dir: ./httpdocs/
+        protocol: ftps
+        port: 21
