@@ -26,7 +26,7 @@ jobs:
     - name: Publish Application
       run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-build -o ./publish
 
-    # --- THIS IS THE FINAL, CORRECTED DEPLOYMENT STEP ---
+    # --- The ONLY change is the casing in the 'uses:' line below ---
     - name: Deploy to MonsterASP.net via WebDeploy
       uses: WebAppDeploy/web-deploy@v3.0.1
       with:
