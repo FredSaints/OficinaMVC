@@ -17,21 +17,11 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Restore NuGet Packages
-      run: dotnet restore ./OficinaMVC/OficinaMVC.csproj
+    - name: Restore, Build, and Publish
+      run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release -o ./publish
 
-    - name: Build Application in Release Mode
-      run: dotnet build ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-restore
-
-    - name: Publish Application
-      run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-build -o ./publish
-
-    # --- The ONLY change is the casing in the 'uses:' line below ---
-    - name: Deploy to MonsterASP.net via WebDeploy
-      uses: WebAppDeploy/web-deploy@v3.0.1
+    - name: Deploy to MonsterASP.net using Publish Profile
+      uses: microsoft/webapps-deploy@v2
       with:
-        server-url: ${{ secrets.SERVER_COMPUTER_NAME }}
-        website-name: ${{ secrets.WEBSITE_NAME }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        package-path: './publish'
+        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+        package: './publish'
