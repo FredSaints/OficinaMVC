@@ -2,7 +2,7 @@ name: Build and Deploy OficinaMVC to Production
 
 on:
   push:
-    branches: [ "main" ] # This workflow runs on every push to the main branch
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
@@ -26,11 +26,12 @@ jobs:
     - name: Publish Application
       run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-build -o ./publish
 
+    # --- THIS IS THE CORRECTED DEPLOYMENT STEP ---
     - name: Deploy to MonsterASP.net via WebDeploy
-      uses: microsoft/webapps-deploy@v2
+      uses: AkhileshNS/msdeploy-publish@v2.0
       with:
-        app-name: ${{ secrets.WEBSITE_NAME }}
-        server-computer-name: ${{ secrets.SERVER_COMPUTER_NAME }}
-        server-username: ${{ secrets.SERVER_USERNAME }}
-        server-password: ${{ secrets.SERVER_PASSWORD }}
-        package: ./publish
+        server-url: ${{ secrets.SERVER_COMPUTER_NAME }}
+        website-name: ${{ secrets.WEBSITE_NAME }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        package-path: './publish'
