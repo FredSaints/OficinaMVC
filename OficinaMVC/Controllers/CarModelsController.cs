@@ -6,25 +6,43 @@ using OficinaMVC.Models.Vehicles;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Controller for managing car models. Only accessible by Admins.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class CarModelsController : Controller
     {
         private readonly ICarModelRepository _carModelRepository;
         private readonly IBrandRepository _brandRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CarModelsController"/> class.
+        /// </summary>
+        /// <param name="carModelRepository">Repository for car model data access.</param>
+        /// <param name="brandRepository">Repository for brand data access.</param>
         public CarModelsController(ICarModelRepository carModelRepository, IBrandRepository brandRepository)
         {
             _carModelRepository = carModelRepository;
             _brandRepository = brandRepository;
         }
 
-        // GET: CarModels
+
+        /// <summary>
+        /// Displays a list of all car models with their brands.
+        /// </summary>
+        /// <returns>The car models index view.</returns>
+        // GET: CarModels/Index
         public async Task<IActionResult> Index()
         {
             var carModels = await _carModelRepository.GetAllWithBrandAsync();
             return View(carModels);
         }
 
+
+        /// <summary>
+        /// Displays the car model creation form.
+        /// </summary>
+        /// <returns>The create car model view.</returns>
         // GET: CarModels/Create
         public async Task<IActionResult> Create()
         {
@@ -33,9 +51,15 @@ namespace OficinaMVC.Controllers
             return View(viewModel);
         }
 
-        // POST: CarModels/Create
+
+        /// <summary>
+        /// Handles car model creation POST requests.
+        /// </summary>
+        /// <param name="viewModel">The car model view model to create.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // POST: CarModels/Create
         public async Task<IActionResult> Create(CarModelViewModel viewModel)
         {
             if (ModelState.IsValid)
@@ -60,6 +84,12 @@ namespace OficinaMVC.Controllers
             return View(viewModel);
         }
 
+
+        /// <summary>
+        /// Displays the car model edit form for a given car model.
+        /// </summary>
+        /// <param name="id">The car model ID.</param>
+        /// <returns>The edit car model view or not found.</returns>
         // GET: CarModels/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
@@ -79,9 +109,15 @@ namespace OficinaMVC.Controllers
             return View(viewModel);
         }
 
-        // POST: CarModels/Edit/5
+        /// <summary>
+        /// Handles car model edit POST requests.
+        /// </summary>
+        /// <param name="id">The car model ID.</param>
+        /// <param name="viewModel">The car model view model with updated data.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // POST: CarModels/Edit/5
         public async Task<IActionResult> Edit(int id, CarModelViewModel viewModel)
         {
             if (id != viewModel.Id)
@@ -107,11 +143,15 @@ namespace OficinaMVC.Controllers
                     return RedirectToAction(nameof(Index));
                 }
             }
-
             ViewBag.Brands = await _brandRepository.GetCombo();
             return View(viewModel);
         }
 
+        /// <summary>
+        /// Displays the car model delete confirmation page.
+        /// </summary>
+        /// <param name="id">The car model ID.</param>
+        /// <returns>The delete confirmation view or not found.</returns>
         // GET: CarModels/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
@@ -124,9 +164,14 @@ namespace OficinaMVC.Controllers
             return View(carModel);
         }
 
-        // POST: CarModels/Delete/5
+        /// <summary>
+        /// Handles car model deletion POST requests.
+        /// </summary>
+        /// <param name="id">The car model ID.</param>
+        /// <returns>Redirects to the car models index or shows an error if the model is in use.</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        // POST: CarModels/Delete/5
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             if (await _carModelRepository.IsInUseAsync(id))

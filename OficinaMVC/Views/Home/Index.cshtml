@@ -3,26 +3,32 @@
     ViewData["Title"] = "Welcome to FredAuto";
 }
 
-<!-- Hero Section -->
+@section Styles {
+    <link rel="stylesheet" href="~/css/home-hero.css" asp-append-version="true" />
+}
+
+<!-- Hero Section with Larger Text -->
 <div class="hero-container">
     <div class="hero-grid">
-        <!-- Text Column -->
         <div class="hero-text-content">
-            <h1 class="display-4 fw-bold lh-1 text-body-emphasis">FredAuto: Quality Service, Trusted Mechanics</h1>
-            <p class="lead my-4 fs-4">Your one-stop shop for all vehicle maintenance and repair needs. We combine expert knowledge with state-of-the-art technology to get you back on the road safely and quickly.</p>
+            <h1>FredAuto: Precision Care for Your Vehicle</h1>
+            <p class="lead">Expert technicians using cutting-edge diagnostics to deliver faster, smarter auto repairs with transparent pricing.</p>
             <div class="d-grid gap-2 d-md-flex mt-4">
-                <a asp-controller="Appointment" asp-action="Create" class="btn btn-primary btn-lg px-4 fw-bold btn-icon-text shadow"><i class="bi bi-calendar-plus"></i> Book Now</a>
-                <a asp-controller="Home" asp-action="Index" asp-fragment="services" class="btn btn-outline-secondary btn-lg px-4 btn-icon-text shadow"><i class="bi bi-arrow-down-circle"></i> Our Services</a>
+                <a href="#contacts" class="btn btn-primary btn-lg px-4 fw-bold btn-icon-text scroll-link">
+                    <i class="bi bi-calendar-check"></i> Schedule Service
+                </a>
+                <a asp-controller="Home" asp-action="Index" asp-fragment="services" class="btn btn-outline-secondary btn-lg px-4 btn-icon-text">
+                    <i class="bi bi-clipboard-heart"></i> View Services
+                </a>
             </div>
         </div>
-        <!-- Image Column -->
+
         <div class="hero-image-content">
-            <img src="~/images/hero-image.png" alt="Workshop Hero Image" />
+            <img src="~/images/hero-image.png" alt="Professional auto service center with technicians working on vehicles">
         </div>
     </div>
 </div>
 
-<!-- The rest of the page content remains inside a standard .container for centered layout -->
 <div class="container">
 
     <!-- Services ("Ofertas") Section -->

@@ -16,7 +16,7 @@
                 <div class="bg-light p-4 rounded border">
                     <dl class="row mb-0 fs-5">
                         <dt class="col-sm-4 text-secondary">Date:</dt>
-                        <dd class="col-sm-8 fw-bold">@Model.Date.ToString("F")</dd>
+                        <dd class="col-sm-8 fw-bold">@ViewHelper.FormatUtcDate(Model.Date, "F")</dd>
 
                         <dt class="col-sm-4 text-secondary">Client:</dt>
                         <dd class="col-sm-8">@Model.Client.FullName</dd>

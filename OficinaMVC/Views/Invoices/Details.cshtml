@@ -176,7 +176,15 @@
         </section>
 
         <footer class="text-center text-muted mt-5 py-3 border-top">
-            <p class="mb-1">Thank you for your business!</p>
+            @if (Model.Invoice.Status == "Unpaid")
+            {
+                <form asp-action="CreateCheckoutSession" asp-route-id="@Model.Invoice.Id" method="post">
+                    <button type="submit" class="btn btn-lg btn-success shadow-sm btn-icon-text">
+                        <i class="bi bi-credit-card-fill"></i> Pay with Card
+                    </button>
+                </form>
+            }
+            <p class="mt-3 mb-1">Thank you for your business!</p>
             <p class="small mb-0">@Model.CompanyName</p>
         </footer>
     </div>

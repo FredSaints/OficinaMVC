@@ -1,10 +1,31 @@
-﻿$(document).ready(function () {
+﻿/**
+ * Notification system for the FredAuto web application.
+ * Handles rendering, adding, and removing notifications, as well as updating the notification badge.
+ * Integrates with SignalR for real-time updates.
+ *
+ * Dependencies: jQuery, SignalR
+ */
+$(document).ready(function () {
     if ($('#notification-bell').length) {
+        /**
+         * Key for storing notifications in sessionStorage.
+         * @type {string}
+         */
         const NOTIFICATION_KEY = 'userNotifications';
+        /**
+         * jQuery element for the notification list dropdown.
+         * @type {JQuery<HTMLElement>}
+         */
         const notificationList = $('#notification-list');
+        /**
+         * jQuery element for the notification count badge.
+         * @type {JQuery<HTMLElement>}
+         */
         const countBadge = $('#notification-count');
 
-        // --- 1. RENDER EXISTING NOTIFICATIONS ON PAGE LOAD ---
+        /**
+         * Renders the notifications from sessionStorage into the dropdown list.
+         */
         function renderNotifications() {
             const storedNotifications = JSON.parse(sessionStorage.getItem(NOTIFICATION_KEY) || '[]');
             notificationList.empty(); // Clear list before rendering
@@ -31,11 +52,16 @@
             updateBadgeCount();
         }
 
-        // --- 2. ADD A NEW NOTIFICATION AND SAVE IT ---
+        /**
+         * Adds a new notification to sessionStorage and updates the UI.
+         * @param {string} message - The notification message.
+         * @param {string} url - The URL to navigate to when the notification is clicked.
+         * @param {string} icon - The icon class for the notification.
+         */
         function addNotification(message, url, icon) {
             const storedNotifications = JSON.parse(sessionStorage.getItem(NOTIFICATION_KEY) || '[]');
 
-            // --- THIS IS THE IMPROVED LINE ---
+            // Generate a unique ID for the notification
             const uniqueId = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             const newNotif = {
@@ -51,7 +77,10 @@
             renderNotifications();
         }
 
-        // --- 3. REMOVE A NOTIFICATION AND SAVE THE CHANGE ---
+        /**
+         * Removes a notification by its ID and updates the UI.
+         * @param {string} targetId - The ID of the notification to remove.
+         */
         function removeNotification(targetId) {
             let storedNotifications = JSON.parse(sessionStorage.getItem(NOTIFICATION_KEY) || '[]');
             storedNotifications = storedNotifications.filter(n => n.id !== targetId);
@@ -59,7 +88,9 @@
             renderNotifications();
         }
 
-        // --- 4. UPDATE THE BADGE ---
+        /**
+         * Updates the notification badge count based on the number of notifications.
+         */
         function updateBadgeCount() {
             const storedNotifications = JSON.parse(sessionStorage.getItem(NOTIFICATION_KEY) || '[]');
             if (storedNotifications.length > 0) {
@@ -70,13 +101,19 @@
         }
 
         // --- EVENT HANDLERS ---
+
+        /**
+         * SignalR connection for receiving real-time notifications.
+         */
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/notificationHub")
             .configureLogging(signalR.LogLevel.Information)
             .build();
 
+        // Listen for notifications from the server
         connection.on("ReceiveNotification", addNotification);
 
+        // Handle notification click: remove from storage and navigate
         notificationList.on('click', 'li.notification-item a.dropdown-item', function (e) {
             e.preventDefault();
             const destinationUrl = $(this).attr('href');
@@ -91,6 +128,7 @@
             window.location.href = destinationUrl;
         });
 
+        // Handle notification bell click: clear the badge visually
         $('#notification-bell').on('click', function () {
             // For simplicity, we can just clear the badge visually. 
             // A more complex system might have a separate "read" state.
@@ -98,6 +136,10 @@
         });
 
         // --- INITIALIZATION ---
+
+        /**
+         * Starts the SignalR connection and handles reconnection logic.
+         */
         async function start() {
             try {
                 await connection.start();

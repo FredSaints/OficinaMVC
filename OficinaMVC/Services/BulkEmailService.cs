@@ -5,17 +5,24 @@ using OficinaMVC.Hubs;
 
 namespace OficinaMVC.Services
 {
+    /// <inheritdoc cref="IBulkEmailService"/>
     public class BulkEmailService : IBulkEmailService
     {
         private readonly IMailHelper _mailHelper;
         private readonly IHubContext<NotificationHub, INotificationClient> _hubContext;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BulkEmailService"/> class.
+        /// </summary>
+        /// <param name="mailHelper">The mail helper service for sending emails.</param>
+        /// <param name="hubContext">The SignalR hub context for sending progress updates.</param>
         public BulkEmailService(IMailHelper mailHelper, IHubContext<NotificationHub, INotificationClient> hubContext)
         {
             _mailHelper = mailHelper;
             _hubContext = hubContext;
         }
 
+        /// <inheritdoc />
         [AutomaticRetry(Attempts = 0)]
         public async Task SendAnnouncements(List<string> emails, string subject, string message, string connectionId)
         {

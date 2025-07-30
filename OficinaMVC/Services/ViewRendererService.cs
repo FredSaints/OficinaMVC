@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace OficinaMVC.Services
 {
+    /// <summary>
+    /// Service for rendering Razor views to string for use in emails or PDFs.
+    /// </summary>
     public class ViewRendererService : IViewRendererService
     {
         private readonly IRazorViewEngine _razorViewEngine;
@@ -16,6 +19,14 @@ namespace OficinaMVC.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IActionContextAccessor _actionContextAccessor;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ViewRendererService"/> class.
+        /// </summary>
+        /// <param name="razorViewEngine">The Razor view engine.</param>
+        /// <param name="tempDataProvider">The TempData provider.</param>
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
+        /// <param name="actionContextAccessor">The action context accessor.</param>
         public ViewRendererService(
             IRazorViewEngine razorViewEngine,
             ITempDataProvider tempDataProvider,
@@ -30,6 +41,7 @@ namespace OficinaMVC.Services
             _actionContextAccessor = actionContextAccessor;
         }
 
+        /// <inheritdoc />
         public async Task<string> RenderToStringAsync(string viewName, object model, ViewDataDictionary viewData = null)
         {
             var actionContext = _actionContextAccessor.ActionContext ??
@@ -44,7 +56,6 @@ namespace OficinaMVC.Services
                     throw new ArgumentNullException($"{viewName} does not match any available view");
                 }
 
-                // THE FIX: Use the provided ViewData, or create a new one if null
                 var viewDictionary = viewData ?? new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
                 viewDictionary.Model = model;
 

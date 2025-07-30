@@ -9,9 +9,13 @@ using OficinaMVC.Helpers;
 using OficinaMVC.Hubs;
 using OficinaMVC.Models.Appointments;
 using OficinaMVC.Services;
+using TimeZoneConverter;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Handles appointment management actions for clients, receptionists, and mechanics.
+    /// </summary>
     [Authorize]
     public class AppointmentController : Controller
     {
@@ -22,7 +26,19 @@ namespace OficinaMVC.Controllers
         private readonly IHubContext<NotificationHub, INotificationClient> _notificationHub;
         private readonly IMailHelper _mailHelper;
         private readonly IViewRendererService _viewRenderer;
+        private readonly IUserService _userService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AppointmentController"/> class.
+        /// </summary>
+        /// <param name="appointmentRepo">Repository for appointment data access.</param>
+        /// <param name="userHelper">Helper for user management operations.</param>
+        /// <param name="vehicleRepo">Repository for vehicle data access.</param>
+        /// <param name="repairTypeRepo">Repository for repair type data access.</param>
+        /// <param name="notificationHub">SignalR hub context for notifications.</param>
+        /// <param name="mailHelper">Helper for sending emails.</param>
+        /// <param name="viewRenderer">Service for rendering views to string (for emails).</param>
+        /// <param name="userService">Service for user-related business logic.</param>
         public AppointmentController(
             IAppointmentRepository appointmentRepo,
             IUserHelper userHelper,
@@ -30,7 +46,8 @@ namespace OficinaMVC.Controllers
             IRepairTypeRepository repairTypeRepo,
             IHubContext<NotificationHub, INotificationClient> notificationHub,
             IMailHelper mailHelper,
-            IViewRendererService viewRenderer)
+            IViewRendererService viewRenderer,
+            IUserService userService)
         {
             _appointmentRepo = appointmentRepo;
             _userHelper = userHelper;
@@ -39,10 +56,18 @@ namespace OficinaMVC.Controllers
             _notificationHub = notificationHub;
             _mailHelper = mailHelper;
             _viewRenderer = viewRenderer;
+            _userService = userService;
         }
 
-        // GET: Appointment/
+        /// <summary>
+        /// Displays a list of appointments, filtered by date, status, and mechanic.
+        /// </summary>
+        /// <param name="filterDate">Optional date to filter appointments.</param>
+        /// <param name="status">Optional status to filter appointments.</param>
+        /// <param name="mechanicId">Optional mechanic ID to filter appointments.</param>
+        /// <returns>The appointments view.</returns>
         [Authorize(Roles = "Receptionist,Mechanic")]
+        // GET: Appointment/Index
         public async Task<IActionResult> Index(DateTime? filterDate, string status, string mechanicId)
         {
             IQueryable<Appointment> query = _appointmentRepo.GetAll()
@@ -52,7 +77,7 @@ namespace OficinaMVC.Controllers
 
             if (User.IsInRole("Mechanic"))
             {
-                var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+                var user = await _userService.GetCurrentUserAsync();
                 if (user != null)
                 {
                     query = query.Where(a => a.MechanicId == user.Id);
@@ -84,11 +109,16 @@ namespace OficinaMVC.Controllers
             return View(appointments);
         }
 
-        // GET: Appointment/MyAppointments
+        /// <summary>
+        /// Displays the current client's appointments.
+        /// </summary>
+        /// <param name="showCompleted">Whether to show completed appointments.</param>
+        /// <returns>The MyAppointments view with the client's appointments.</returns>
         [Authorize(Roles = "Client")]
+        // GET: Appointment/MyAppointments
         public async Task<IActionResult> MyAppointments(bool showCompleted = false)
         {
-            var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+            var user = await _userService.GetCurrentUserAsync();
             if (user == null) return NotFound();
 
             var appointments = await _appointmentRepo.GetByClientIdAsync(user.Id, showCompleted);
@@ -97,19 +127,27 @@ namespace OficinaMVC.Controllers
             return View("MyAppointments", appointments);
         }
 
-        // GET: Appointment/Create
+        /// <summary>
+        /// Displays the appointment creation form.
+        /// </summary>
+        /// <returns>The create appointment view.</returns>
         [Authorize(Roles = "Receptionist")]
+        // GET: Appointment/Create
         public async Task<IActionResult> Create()
         {
             var model = new AppointmentViewModel
             {
-                AppointmentDate = DateTime.Today.AddDays(1).Date.AddHours(9)
+                AppointmentDate = DateTime.UtcNow.Date.AddDays(1).AddHours(9)
             };
             await RepopulateDropdownsForCreateAsync(model);
             return View(model);
         }
 
-        // POST: Appointment/Create
+        /// <summary>
+        /// Handles appointment creation POST requests.
+        /// </summary>
+        /// <param name="model">The appointment view model.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Receptionist")]
@@ -122,14 +160,18 @@ namespace OficinaMVC.Controllers
             ModelState.Remove("ServiceTypes");
             ModelState.Remove("Mechanics");
 
-            if (model.AppointmentDate < DateTime.Now)
+            var portugalTimeZone = TZConvert.GetTimeZoneInfo("W. Europe Standard Time");
+            var localAppointmentTime = DateTime.SpecifyKind(model.AppointmentDate, DateTimeKind.Unspecified);
+            var utcAppointmentTime = TimeZoneInfo.ConvertTimeToUtc(localAppointmentTime, portugalTimeZone);
+
+            if (utcAppointmentTime < DateTime.UtcNow)
             {
                 ModelState.AddModelError("AppointmentDate", "Cannot book an appointment in the past.");
             }
 
             if (ModelState.IsValid)
             {
-                if (!await _appointmentRepo.IsMechanicAvailableAtTimeAsync(model.MechanicId, model.AppointmentDate))
+                if (!await _appointmentRepo.IsMechanicAvailableAtTimeAsync(model.MechanicId, localAppointmentTime))
                 {
                     ModelState.AddModelError("MechanicId", "The selected mechanic is not scheduled to work at the chosen time.");
                 }
@@ -145,7 +187,7 @@ namespace OficinaMVC.Controllers
                         ClientId = model.ClientId,
                         VehicleId = model.VehicleId,
                         ServiceType = serviceType.Name,
-                        Date = model.AppointmentDate,
+                        Date = utcAppointmentTime,
                         MechanicId = model.MechanicId,
                         Notes = model.Notes,
                         Status = "Pending"
@@ -165,8 +207,16 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
-        // GET: Appointment/Edit/5
+
+
+
+        /// <summary>
+        /// Displays the appointment edit form for a given appointment.
+        /// </summary>
+        /// <param name="id">The appointment ID.</param>
+        /// <returns>The edit appointment view or a redirect if not allowed.</returns>
         [Authorize(Roles = "Receptionist")]
+        // GET: Appointment/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var appointment = await _appointmentRepo.GetByIdWithDetailsAsync(id);
@@ -178,6 +228,9 @@ namespace OficinaMVC.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var portugalTimeZone = TZConvert.GetTimeZoneInfo("W. Europe Standard Time");
+            var localAppointmentTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.Date, portugalTimeZone);
+
             var serviceType = await _repairTypeRepo.GetAll().AsNoTracking().FirstOrDefaultAsync(rt => rt.Name == appointment.ServiceType);
             var model = new AppointmentViewModel
             {
@@ -185,7 +238,7 @@ namespace OficinaMVC.Controllers
                 ClientId = appointment.ClientId,
                 VehicleId = appointment.VehicleId,
                 ServiceTypeId = serviceType?.Id ?? 0,
-                AppointmentDate = appointment.Date,
+                AppointmentDate = localAppointmentTime,
                 MechanicId = appointment.MechanicId,
                 Notes = appointment.Notes,
                 ClientName = appointment.Client.FullName,
@@ -196,7 +249,12 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
-        // POST: Appointment/Edit/5
+        /// <summary>
+        /// Handles appointment edit POST requests.
+        /// </summary>
+        /// <param name="id">The appointment ID.</param>
+        /// <param name="model">The appointment view model.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Receptionist")]
@@ -213,9 +271,18 @@ namespace OficinaMVC.Controllers
             ModelState.Remove("ServiceTypes");
             ModelState.Remove("Mechanics");
 
+            var portugalTimeZone = TZConvert.GetTimeZoneInfo("W. Europe Standard Time");
+            var localAppointmentTime = DateTime.SpecifyKind(model.AppointmentDate, DateTimeKind.Unspecified);
+            var utcAppointmentTime = TimeZoneInfo.ConvertTimeToUtc(localAppointmentTime, portugalTimeZone);
+
+            if (utcAppointmentTime < DateTime.UtcNow)
+            {
+                ModelState.AddModelError("AppointmentDate", "Cannot book an appointment in the past.");
+            }
+
             if (ModelState.IsValid)
             {
-                if (!await _appointmentRepo.IsMechanicAvailableAtTimeAsync(model.MechanicId, model.AppointmentDate))
+                if (!await _appointmentRepo.IsMechanicAvailableAtTimeAsync(model.MechanicId, localAppointmentTime))
                 {
                     ModelState.AddModelError("MechanicId", "The selected mechanic is not scheduled to work at the chosen time.");
                 }
@@ -232,7 +299,7 @@ namespace OficinaMVC.Controllers
                     var originalDate = appointmentToUpdate.Date;
                     var originalMechanicId = appointmentToUpdate.MechanicId;
 
-                    appointmentToUpdate.Date = model.AppointmentDate;
+                    appointmentToUpdate.Date = utcAppointmentTime;
                     appointmentToUpdate.MechanicId = model.MechanicId;
                     appointmentToUpdate.Notes = model.Notes;
                     appointmentToUpdate.ServiceType = serviceType.Name;
@@ -252,8 +319,13 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
-        // GET: Appointment/Delete/5
+        /// <summary>
+        /// Displays the appointment delete confirmation page.
+        /// </summary>
+        /// <param name="id">The appointment ID.</param>
+        /// <returns>The delete confirmation view or a redirect if not allowed.</returns>
         [Authorize(Roles = "Receptionist")]
+        // GET: Appointment/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
             var appointment = await _appointmentRepo.GetByIdWithDetailsAsync(id);
@@ -267,10 +339,15 @@ namespace OficinaMVC.Controllers
             return View(appointment);
         }
 
-        // POST: Appointment/Delete/5
+        /// <summary>
+        /// Handles appointment deletion POST requests.
+        /// </summary>
+        /// <param name="id">The appointment ID.</param>
+        /// <returns>Redirects to the appointments index after deletion.</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Receptionist")]
+        // POST: Appointment/Delete/5
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var appointment = await _appointmentRepo.GetByIdWithDetailsAsync(id);
@@ -285,6 +362,10 @@ namespace OficinaMVC.Controllers
 
         #region Private Helper Methods
 
+        /// <summary>
+        /// Sends notifications and confirmation email when an appointment is created.
+        /// </summary>
+        /// <param name="appointmentId">The ID of the created appointment.</param>
         private async Task SendAppointmentCreationNotificationsAsync(int appointmentId)
         {
             var appointment = await _appointmentRepo.GetByIdWithDetailsAsync(appointmentId);
@@ -315,6 +396,12 @@ namespace OficinaMVC.Controllers
             }
         }
 
+        /// <summary>
+        /// Sends notifications and reschedule email when an appointment is updated.
+        /// </summary>
+        /// <param name="updatedAppointment">The updated appointment entity.</param>
+        /// <param name="originalDate">The original appointment date.</param>
+        /// <param name="originalMechanicId">The original mechanic's ID.</param>
         private async Task SendAppointmentUpdateNotificationsAsync(Appointment updatedAppointment, DateTime originalDate, string originalMechanicId)
         {
             if (updatedAppointment == null || (originalDate == updatedAppointment.Date && originalMechanicId == updatedAppointment.MechanicId))
@@ -357,6 +444,10 @@ namespace OficinaMVC.Controllers
             }
         }
 
+        /// <summary>
+        /// Sends notifications and cancellation email when an appointment is cancelled.
+        /// </summary>
+        /// <param name="appointment">The cancelled appointment entity.</param>
         private async Task SendAppointmentCancellationNotificationsAsync(Appointment appointment)
         {
             var appointmentDateStr = appointment.Date.ToString("dddd, MMMM dd 'at' h:mm tt");
@@ -385,6 +476,10 @@ namespace OficinaMVC.Controllers
             }
         }
 
+        /// <summary>
+        /// Populates dropdown lists for the appointment creation view model.
+        /// </summary>
+        /// <param name="model">The appointment view model to populate.</param>
         private async Task RepopulateDropdownsForCreateAsync(AppointmentViewModel model)
         {
             model.Clients = await GetClientSelectListAsync();
@@ -395,12 +490,20 @@ namespace OficinaMVC.Controllers
             model.Mechanics = new SelectList(Enumerable.Empty<SelectListItem>(), "Value", "Text");
         }
 
+        /// <summary>
+        /// Populates dropdown lists for the appointment edit view model.
+        /// </summary>
+        /// <param name="model">The appointment view model to populate.</param>
         private async Task RepopulateDropdownsForEditAsync(AppointmentViewModel model)
         {
             model.ServiceTypes = await GetServiceTypeSelectListAsync(model.ServiceTypeId);
             model.Mechanics = await GetMechanicSelectListForEditAsync(model.MechanicId);
         }
 
+        /// <summary>
+        /// Gets a list of clients for use in a dropdown select list.
+        /// </summary>
+        /// <returns>A list of select list items representing clients.</returns>
         private async Task<IEnumerable<SelectListItem>> GetClientSelectListAsync()
         {
             var clients = await _userHelper.GetUsersInRoleAsync("Client");
@@ -409,12 +512,23 @@ namespace OficinaMVC.Controllers
             return list;
         }
 
+        /// <summary>
+        /// Gets a list of vehicles for a given client for use in a dropdown select list.
+        /// </summary>
+        /// <param name="clientId">The client ID.</param>
+        /// <param name="selectedVehicleId">The selected vehicle ID (optional).</param>
+        /// <returns>A list of select list items representing vehicles.</returns>
         private async Task<IEnumerable<SelectListItem>> GetVehicleSelectListAsync(string clientId, int? selectedVehicleId = null)
         {
             var vehicles = await _vehicleRepo.GetVehiclesByOwnerIdAsync(clientId);
             return new SelectList(vehicles.OrderBy(v => v.LicensePlate), "Id", "LicensePlate", selectedVehicleId);
         }
 
+        /// <summary>
+        /// Gets a list of service types for use in a dropdown select list.
+        /// </summary>
+        /// <param name="selectedId">The selected service type ID (optional).</param>
+        /// <returns>A list of select list items representing service types.</returns>
         private async Task<IEnumerable<SelectListItem>> GetServiceTypeSelectListAsync(int? selectedId = null)
         {
             var types = await _repairTypeRepo.GetAllAsync();
@@ -428,6 +542,11 @@ namespace OficinaMVC.Controllers
             return list;
         }
 
+        /// <summary>
+        /// Gets a list of mechanics for use in a dropdown select list for editing.
+        /// </summary>
+        /// <param name="currentMechanicId">The currently selected mechanic ID.</param>
+        /// <returns>A list of select list items representing mechanics.</returns>
         private async Task<IEnumerable<SelectListItem>> GetMechanicSelectListForEditAsync(string currentMechanicId)
         {
             var mechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
@@ -438,8 +557,14 @@ namespace OficinaMVC.Controllers
 
         #region API Methods for AJAX calls
 
+        /// <summary>
+        /// Returns a list of vehicles for a given client (AJAX).
+        /// </summary>
+        /// <param name="clientId">The client ID.</param>
+        /// <returns>A JSON result with the vehicles.</returns>
         [HttpGet]
         [Authorize(Roles = "Receptionist")]
+        // GET: Appointment/GetVehiclesByClient
         public async Task<JsonResult> GetVehiclesByClient(string clientId)
         {
             if (string.IsNullOrEmpty(clientId)) return Json(new SelectList(Enumerable.Empty<SelectListItem>()));
@@ -450,17 +575,30 @@ namespace OficinaMVC.Controllers
             return Json(new SelectList(vehicleList, "Value", "Text"));
         }
 
+        /// <summary>
+        /// Returns a list of available mechanics for a given appointment date (AJAX).
+        /// </summary>
+        /// <param name="appointmentDate">The appointment date.</param>
+        /// <returns>A JSON result with available mechanics.</returns>
         [HttpGet]
         [Authorize(Roles = "Receptionist")]
         public async Task<JsonResult> GetAvailableMechanics(DateTime appointmentDate)
         {
             var mechanics = await _appointmentRepo.GetAvailableMechanicsAsync(appointmentDate);
+
             var mechanicList = mechanics.Select(u => new SelectListItem { Value = u.Id, Text = u.FullName }).ToList();
             return Json(mechanicList);
         }
 
+        /// <summary>
+        /// Returns a list of unavailable days for appointments in a given month and year (AJAX).
+        /// </summary>
+        /// <param name="year">The year.</param>
+        /// <param name="month">The month.</param>
+        /// <returns>A JSON result with unavailable days.</returns>
         [HttpGet]
         [Authorize(Roles = "Receptionist")]
+        // GET: Appointment/GetUnavailableDays
         public async Task<JsonResult> GetUnavailableDays(int year, int month)
         {
             var unavailableDays = await _appointmentRepo.GetUnavailableDaysAsync(year, month);

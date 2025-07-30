@@ -4,15 +4,23 @@ using OficinaMVC.Models.Mechanics;
 
 namespace OficinaMVC.Data.Repositories
 {
+    /// <summary>
+    /// Repository for handling data operations specific to users with the 'Mechanic' role.
+    /// </summary>
     public class MechanicRepository : IMechanicRepository
     {
         private readonly DataContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MechanicRepository"/> class.
+        /// </summary>
+        /// <param name="context">The database context.</param>
         public MechanicRepository(DataContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc/>
         public async Task<User> GetByIdWithDetailsAsync(string mechanicId)
         {
             return await _context.Users
@@ -22,6 +30,7 @@ namespace OficinaMVC.Data.Repositories
                 .FirstOrDefaultAsync(u => u.Id == mechanicId);
         }
 
+        /// <inheritdoc/>
         public async Task<(bool Success, string ErrorMessage)> UpdateMechanicAsync(MechanicEditViewModel model)
         {
             // --- START OF VALIDATION LOGIC ---

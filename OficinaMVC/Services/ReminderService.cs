@@ -4,20 +4,32 @@ using OficinaMVC.Helpers;
 
 namespace OficinaMVC.Services
 {
+    /// <summary>
+    /// Service for sending appointment reminder emails to clients for upcoming appointments.
+    /// </summary>
     public class ReminderService : IReminderService
     {
         private readonly DataContext _context;
         private readonly IMailHelper _mailHelper;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReminderService"/> class.
+        /// </summary>
+        /// <param name="context">The database context for data access.</param>
+        /// <param name="mailHelper">The mail helper service for sending emails.</param>
         public ReminderService(DataContext context, IMailHelper mailHelper)
         {
             _context = context;
             _mailHelper = mailHelper;
         }
 
+        /// <summary>
+        /// Sends reminder emails to all clients with confirmed appointments scheduled for tomorrow.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task SendAppointmentReminders()
         {
-            var tomorrow = DateTime.Today.AddDays(1);
+            var tomorrow = DateTime.UtcNow.Date.AddDays(1);
 
             var appointmentsForTomorrow = await _context.Appointments
                 .Include(a => a.Client)
@@ -43,7 +55,12 @@ namespace OficinaMVC.Services
             }
             Console.WriteLine("Finished sending reminders.");
         }
-
+    
+        /// <summary>
+        /// Builds the HTML body for the appointment reminder email.
+        /// </summary>
+        /// <param name="appt">The appointment entity containing details for the reminder.</param>
+        /// <returns>The HTML string for the reminder email body.</returns>
         private string BuildReminderEmailBody(Data.Entities.Appointment appt)
         {
             return $@"

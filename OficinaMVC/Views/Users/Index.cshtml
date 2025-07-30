@@ -1,0 +1,145 @@
+﻿@model IEnumerable<OficinaMVC.Data.Entities.User>
+@inject OficinaMVC.Helpers.IUserHelper UserHelper
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-4 mb-3 gap-3">
+    <h2 class="mb-0 text-primary">
+        <i class="bi bi-people-fill me-2"></i>@ViewData["Title"]
+    </h2>
+
+    <div class="d-flex align-items-center gap-2">
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="searchType" id="searchName" value="name"
+                       @(ViewData["CurrentSearchType"] as string != "nif" ? "checked" : "") autocomplete="off">
+                <label class="btn btn-outline-secondary" for="searchName" title="Search by Name"><i class="bi bi-person"></i></label>
+
+                <input type="radio" class="btn-check" name="searchType" id="searchNIF" value="nif"
+                       @(ViewData["CurrentSearchType"] as string == "nif" ? "checked" : "") autocomplete="off">
+                <label class="btn btn-outline-secondary" for="searchNIF" title="Search by NIF"><i class="bi bi-card-text"></i></label>
+            </div>
+
+            <div class="input-group" style="max-width: 250px;">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" id="searchInput" placeholder="Search..." />
+                <button type="submit" class="btn btn-primary" title="Search"><i class="bi bi-search"></i></button>
+            </div>
+
+            <a asp-action="Index" class="btn btn-secondary" title="Clear Filter"><i class="bi bi-x-lg"></i></a>
+        </form>
+
+        <a asp-controller="Account" asp-action="Register" class="btn btn-primary shadow-sm btn-icon-text">
+            <i class="bi bi-person-plus-fill me-1"></i> Add User
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">User</th>
+                        <th>Email</th>
+                        <th>NIF</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4" style="width: 150px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        var roles = await UserHelper.GetRolesAsync(user);
+                        var primaryRole = roles.FirstOrDefault() ?? "N/A";
+                        bool isLockedOut = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <img src="@(user.ProfileImageUrl ?? "/images/default-profile.png")" alt="Profile" class="rounded-circle me-3" style="width:40px; height:40px; object-fit:cover;">
+                                    <div class="fw-bold">@user.FullName</div>
+                                </div>
+                            </td>
+                            <td>@user.Email</td>
+                            <td>@user.NIF</td>
+                            <td>@primaryRole</td>
+                            <td>
+                                @if (isLockedOut)
+                                {
+                                    <span class="badge bg-danger">Deactivated</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                @if (isLockedOut)
+                                {
+                                    <form asp-action="Reactivate" asp-route-id="@user.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success btn-icon-text" title="Reactivate User">
+                                            <i class="bi bi-unlock-fill"></i> Reactivate
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Deactivate" asp-route-id="@user.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon-text" title="Deactivate User">
+                                            <i class="bi bi-lock-fill"></i> Deactivate
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameRadio = document.getElementById('searchName');
+            const nifRadio = document.getElementById('searchNIF');
+            const searchInput = document.getElementById('searchInput');
+
+            function updatePlaceholder() {
+                if (nifRadio.checked) {
+                    searchInput.placeholder = 'Search by NIF...';
+                } else {
+                    searchInput.placeholder = 'Search by Name...';
+                }
+            }
+
+            nameRadio.addEventListener('change', updatePlaceholder);
+            nifRadio.addEventListener('change', updatePlaceholder);
+
+            updatePlaceholder();
+        });
+    </script>
+}

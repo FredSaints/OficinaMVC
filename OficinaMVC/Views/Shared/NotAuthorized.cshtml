@@ -1,19 +1,30 @@
-﻿@{
+﻿@model ErrorViewModel
+@{
     ViewData["Title"] = "Access Denied";
 }
 
 <div class="container text-center mt-5 pt-5">
     <div class="row justify-content-center">
-        <div class="col-lg-6">
+        <div class="col-lg-7">
             <i class="bi bi-lock-fill text-danger" style="font-size: 5rem;"></i>
             <h1 class="display-1 fw-bold">403</h1>
             <h2 class="display-4">Access Denied</h2>
             <p class="lead text-muted my-3">
-                You do not have permission to view this page. Please contact a system administrator if you believe this is an error.
+                You do not have the necessary permissions to view this page. Please contact a system administrator if you believe this is an error.
             </p>
+            @if (!string.IsNullOrEmpty(Model.OriginalPath))
+            {
+                <div class="alert alert-secondary mt-4">
+                    You were denied access to: <code>@Model.OriginalPath</code>
+                </div>
+            }
             <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg mt-3">
                 <i class="bi bi-house-door-fill me-2"></i>Go to Homepage
             </a>
+            @if (Model.ShowRequestId)
+            {
+                <p class="small text-muted mt-4">Support ID: <code>@Model.RequestId</code></p>
+            }
         </div>
     </div>
 </div>

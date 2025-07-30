@@ -5,27 +5,47 @@ using OficinaMVC.Data.Repositories;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Controller for managing parts inventory. Accessible by mechanics and receptionists.
+    /// </summary>
     [Authorize(Roles = "Mechanic,Receptionist")]
     public class PartsController : Controller
     {
         private readonly IPartRepository _partRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PartsController"/> class.
+        /// </summary>
+        /// <param name="partRepository">Repository for part data access.</param>
         public PartsController(IPartRepository partRepository)
         {
             _partRepository = partRepository;
         }
 
+        /// <summary>
+        /// Displays a list of all parts in the inventory.
+        /// </summary>
+        /// <returns>The parts index view.</returns>
         public async Task<IActionResult> Index()
         {
             var parts = await _partRepository.GetAllAsync();
             return View(parts);
         }
 
+        /// <summary>
+        /// Displays the part creation form.
+        /// </summary>
+        /// <returns>The create part view.</returns>
         public IActionResult Create()
         {
             return View();
         }
 
+        /// <summary>
+        /// Handles part creation POST requests.
+        /// </summary>
+        /// <param name="part">The part entity to create.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Part part)
@@ -46,6 +66,11 @@ namespace OficinaMVC.Controllers
             return View(part);
         }
 
+        /// <summary>
+        /// Displays the part edit form for a given part.
+        /// </summary>
+        /// <param name="id">The part ID.</param>
+        /// <returns>The edit part view or not found.</returns>
         public async Task<IActionResult> Edit(int id)
         {
             var part = await _partRepository.GetByIdAsync(id);
@@ -56,6 +81,12 @@ namespace OficinaMVC.Controllers
             return View(part);
         }
 
+        /// <summary>
+        /// Handles part edit POST requests.
+        /// </summary>
+        /// <param name="id">The part ID.</param>
+        /// <param name="part">The part entity with updated data.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Part part)
@@ -81,6 +112,11 @@ namespace OficinaMVC.Controllers
             return View(part);
         }
 
+        /// <summary>
+        /// Displays the part delete confirmation page.
+        /// </summary>
+        /// <param name="id">The part ID.</param>
+        /// <returns>The delete confirmation view or not found.</returns>
         public async Task<IActionResult> Delete(int id)
         {
             var part = await _partRepository.GetByIdAsync(id);
@@ -91,6 +127,11 @@ namespace OficinaMVC.Controllers
             return View(part);
         }
 
+        /// <summary>
+        /// Handles part deletion POST requests.
+        /// </summary>
+        /// <param name="id">The part ID.</param>
+        /// <returns>Redirects to the parts index or shows an error if the part is in use.</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -115,6 +156,11 @@ namespace OficinaMVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// Returns part details as JSON for AJAX calls.
+        /// </summary>
+        /// <param name="id">The part ID.</param>
+        /// <returns>A JSON result with part details or an error message.</returns>
         [HttpGet]
         public async Task<JsonResult> GetPartDetails(int id)
         {

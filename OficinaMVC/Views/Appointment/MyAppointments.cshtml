@@ -12,7 +12,6 @@
         <p class="text-muted mb-0">Here is a list of your appointments.</p>
     </div>
 
-    <!-- Filter Toggle -->
     <form asp-action="MyAppointments" method="get" class="d-flex align-items-center">
         <div class="form-check form-switch fs-5">
             <input class="form-check-input" type="checkbox" role="switch" id="showCompletedSwitch" name="showCompleted" value="true" @(showCompleted ? "checked" : "") onchange="this.form.submit()">
@@ -35,7 +34,6 @@
                 {
                     <p class="lead text-muted mt-2">You have no upcoming appointments.</p>
                 }
-                <a asp-controller="Appointment" asp-action="Create" class="btn btn-primary mt-2">Book an Appointment</a>
             </div>
         }
         else
@@ -51,28 +49,30 @@
                             <th class="text-end pe-4">Details</th>
                         </tr>
                     </thead>
+
+
                     <tbody>
                         @foreach (var item in Model)
                         {
                             <tr>
                                 <td class="ps-4">
-                                    <div class="fw-bold">@item.Date.ToString("D")</div>
-                                    <div class="small text-muted">@item.Date.ToString("t")</div>
+                                    <div class="fw-bold">@ViewHelper.FormatUtcDate(item.Date, "D")</div>
+                                    <div class="small text-muted">@ViewHelper.FormatUtcDate(item.Date, "t")</div>
                                 </td>
                                 <td>@item.Vehicle.LicensePlate</td>
                                 <td>@item.ServiceType</td>
                                 <td>
                                     @if (item.Status == "Completed")
                                     {
-                                        <span class="badge rounded-pill bg-success">@item.Status</span>
+                                        <span class="badge rounded-pill bg-success-subtle text-success-emphasis">@item.Status</span>
                                     }
                                     else if (item.Status == "Pending")
                                     {
-                                        <span class="badge rounded-pill bg-info text-dark">@item.Status</span>
+                                        <span class="badge rounded-pill bg-info-subtle text-info-emphasis">@item.Status</span>
                                     }
                                     else
                                     {
-                                        <span class="badge rounded-pill bg-secondary">@item.Status</span>
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">@item.Status</span>
                                     }
                                 </td>
                                 <td class="text-end pe-4">

@@ -1,19 +1,26 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using System; // Required for Exception
 
 namespace OficinaMVC.Helpers
 {
+    /// <summary>
+    /// Provides methods for sending emails, with or without attachments, using SMTP.
+    /// </summary>
     public class MailHelper : IMailHelper
     {
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MailHelper"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration for email settings.</param>
         public MailHelper(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
+        /// <inheritdoc />
         public Response SendEmail(string to, string subject, string body)
         {
             // Get the configuration settings correctly
@@ -68,6 +75,7 @@ namespace OficinaMVC.Helpers
             return new Response { IsSuccess = true };
         }
 
+        /// <inheritdoc />
         public Response SendEmailWithAttachment(string to, string subject, string body, byte[] attachmentData, string attachmentName)
         {
             var nameFrom = _configuration["Mail:Namefrom"];

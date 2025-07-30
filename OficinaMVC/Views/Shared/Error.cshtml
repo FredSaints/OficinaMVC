@@ -1,18 +1,27 @@
-﻿@{
+﻿@model ErrorViewModel
+@{
     ViewData["Title"] = "Error";
 }
 
 <div class="container text-center mt-5 pt-5">
     <div class="row justify-content-center">
-        <div class="col-lg-6">
+        <div class="col-lg-7">
             <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 5rem;"></i>
             <h1 class="display-4 fw-bold">An Error Occurred</h1>
             <p class="lead text-muted my-3">
-                We're sorry, but something went wrong while processing your request. We have been notified and will look into it.
+                We're sorry, but an unexpected error occurred while processing your request. Our technical team has been notified.
             </p>
             <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg mt-3">
                 <i class="bi bi-house-door-fill me-2"></i>Go to Homepage
             </a>
+
+            @if (Model != null && Model.ShowRequestId)
+            {
+                <div class="alert alert-light mt-4 border">
+                    <p class="mb-1">If you need to contact support, please provide the following ID:</p>
+                    <p class="mb-0"><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
+                </div>
+            }
         </div>
     </div>
 </div>

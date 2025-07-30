@@ -96,8 +96,8 @@
                     {
                         <tr>
                             <td class="ps-4 fw-semibold">
-                                <div>@item.Date.ToString("D")</div>
-                                <div class="small text-muted">@item.Date.ToString("t")</div>
+                                <div>@ViewHelper.FormatUtcDate(item.Date, "D")</div>
+                                <div class="small text-muted">@ViewHelper.FormatUtcDate(item.Date, "t")</div>
                             </td>
                             <td>@item.Client.FullName</td>
                             <td>@item.Vehicle.LicensePlate</td>

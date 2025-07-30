@@ -8,6 +8,9 @@ using OficinaMVC.Services;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Controller for sending announcements and bulk communications to users. Accessible by Admins and Receptionists.
+    /// </summary>
     [Authorize(Roles = "Admin,Receptionist")]
     public class CommunicationController : Controller
     {
@@ -15,6 +18,12 @@ namespace OficinaMVC.Controllers
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly ICommunicationService _communicationService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommunicationController"/> class.
+        /// </summary>
+        /// <param name="userHelper">Helper for user management operations.</param>
+        /// <param name="backgroundJobClient">Hangfire background job client.</param>
+        /// <param name="communicationService">Service for communication-related business logic.</param>
         public CommunicationController(
             IUserHelper userHelper,
             IBackgroundJobClient backgroundJobClient,
@@ -25,16 +34,33 @@ namespace OficinaMVC.Controllers
             _communicationService = communicationService;
         }
 
+        /// <summary>
+        /// Displays the communication dashboard.
+        /// </summary>
+        /// <returns>The communication index view.</returns>
+        // GET: Communication/Index
         public IActionResult Index()
         {
             return View();
         }
 
+        /// <summary>
+        /// Displays the send announcement form.
+        /// </summary>
+        /// <returns>The send announcement view.</returns>
+        // GET: Communication/SendAnnouncement
         public IActionResult SendAnnouncement()
         {
             return View(new CommunicationViewModel());
         }
 
+        /// <summary>
+        /// Handles sending announcements to all clients via background job.
+        /// </summary>
+        /// <param name="model">The communication view model.</param>
+        /// <param name="connectionId">SignalR connection ID for real-time feedback.</param>
+        /// <returns>Ok if job queued, or bad request on error.</returns>
+        // POST: Communication/SendAnnouncement
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendAnnouncement(CommunicationViewModel model, [FromHeader(Name = "X-SignalR-Connection-Id")] string connectionId)
@@ -58,6 +84,11 @@ namespace OficinaMVC.Controllers
             return BadRequest(ModelState);
         }
 
+        /// <summary>
+        /// Displays the bulk cancel appointments form for mechanics.
+        /// </summary>
+        /// <returns>The bulk cancel view with mechanics list.</returns>
+        // GET: Communication/BulkCancel
         public async Task<IActionResult> BulkCancel()
         {
             var mechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
@@ -68,6 +99,13 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Handles bulk cancellation of appointments for a mechanic via background job.
+        /// </summary>
+        /// <param name="model">The bulk cancel view model.</param>
+        /// <param name="connectionId">SignalR connection ID for real-time feedback.</param>
+        /// <returns>Ok if job queued, or bad request on error.</returns>
+        // POST: Communication/BulkCancelConfirmed
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkCancelConfirmed(BulkCancelViewModel model, [FromHeader(Name = "X-SignalR-Connection-Id")] string connectionId)

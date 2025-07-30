@@ -18,8 +18,23 @@
                     <h4 class="card-title">User Management</h4>
                     <p class="card-text text-muted">Create new accounts for clients and staff, and manage staff specialties and schedules.</p>
                     <div class="mt-auto">
-                        <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-icon-text"><i class="bi bi-person-plus-fill me-1"></i>Add User</a>
-                        <a asp-controller="Mechanics" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-person-badge-fill me-1"></i>Manage Staff</a>
+                        <div class="d-grid gap-2">
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-icon-text d-flex align-items-center justify-content-center">
+                                <i class="bi bi-person-plus-fill me-1"></i>Add User
+                            </a>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary btn-icon-text w-100">
+                                        <i class="bi bi-people-fill me-1"></i>Users
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a asp-controller="Mechanics" asp-action="Index" class="btn btn-outline-secondary btn-icon-text w-100">
+                                        <i class="bi bi-person-badge-fill me-1"></i>Staff
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -33,8 +48,18 @@
                     <h4 class="card-title">Vehicle Definitions</h4>
                     <p class="card-text text-muted">Define the vehicle brands and models available for selection throughout the application.</p>
                     <div class="mt-auto">
-                        <a asp-controller="Brands" asp-action="Index" class="btn btn-success btn-icon-text"><i class="bi bi-globe2 me-1"></i>Manage Brands</a>
-                        <a asp-controller="CarModels" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-boxes me-1"></i>Manage Models</a>
+                        <div class="d-grid gap-2">
+                            <a asp-controller="Brands" asp-action="Index" class="btn btn-success btn-icon-text d-flex align-items-center justify-content-center">
+                                <i class="bi bi-globe2 me-1"></i>Manage Brands
+                            </a>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <a asp-controller="CarModels" asp-action="Index" class="btn btn-outline-secondary btn-icon-text w-100">
+                                        <i class="bi bi-boxes me-1"></i>Models
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -48,8 +73,18 @@
                     <h4 class="card-title">Service Definitions</h4>
                     <p class="card-text text-muted">Configure the types of services your workshop offers and the specialties mechanics can have.</p>
                     <div class="mt-auto">
-                        <a asp-controller="RepairType" asp-action="Index" class="btn btn-warning btn-icon-text"><i class="bi bi-tags-fill me-1"></i>Service Types</a>
-                        <a asp-controller="Specialty" asp-action="Index" class="btn btn-outline-secondary btn-icon-text ms-2"><i class="bi bi-star-fill me-1"></i>Specialties</a>
+                        <div class="d-grid gap-2">
+                            <a asp-controller="RepairType" asp-action="Index" class="btn btn-warning btn-icon-text d-flex align-items-center justify-content-center">
+                                <i class="bi bi-tags-fill me-1"></i>Service Types
+                            </a>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <a asp-controller="Specialty" asp-action="Index" class="btn btn-outline-secondary btn-icon-text w-100">
+                                        <i class="bi bi-star-fill me-1"></i>Specialties
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

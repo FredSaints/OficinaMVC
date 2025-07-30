@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using MimeKit.Encodings;
 using OficinaMVC.Data.Entities;
 using OficinaMVC.Helpers;
-using OficinaMVC.Models;
+using OficinaMVC.Models.Accounts;
+using OficinaMVC.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -14,6 +14,9 @@ using System.Text.Encodings.Web;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Handles user account-related actions such as login, registration, password management, and profile updates.
+    /// </summary>
     public class AccountController : Controller
     {
         private readonly IUserHelper _userHelper;
@@ -21,17 +24,38 @@ namespace OficinaMVC.Controllers
         private readonly IConfiguration _configuration;
         private readonly IImageHelper _imageHelper;
         private readonly SignInManager<User> _signInManager;
+        private readonly IUserService _userService;
 
-        public AccountController(IUserHelper userHelper, IMailHelper mailHelper, IConfiguration configuration, IImageHelper imageHelper, SignInManager<User> signInManager)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccountController"/> class.
+        /// </summary>
+        /// <param name="userHelper">Helper for user management operations.</param>
+        /// <param name="mailHelper">Helper for sending emails.</param>
+        /// <param name="configuration">Application configuration.</param>
+        /// <param name="imageHelper">Helper for image upload and processing.</param>
+        /// <param name="signInManager">ASP.NET Core Identity sign-in manager.</param>
+        /// <param name="userService">Service for user-related business logic.</param>
+        public AccountController(IUserHelper userHelper,
+                                 IMailHelper mailHelper,
+                                 IConfiguration configuration,
+                                 IImageHelper imageHelper,
+                                 SignInManager<User> signInManager,
+                                 IUserService userService)
         {
             _userHelper = userHelper;
             _mailHelper = mailHelper;
             _configuration = configuration;
             _imageHelper = imageHelper;
             _signInManager = signInManager;
+            _userService = userService;
         }
 
+        /// <summary>
+        /// Displays the login page.
+        /// </summary>
+        /// <returns>The login view or redirects if already authenticated.</returns>
         [HttpGet]
+        // GET: Account/Login
         public IActionResult Login()
         {
             if (User.Identity.IsAuthenticated)
@@ -41,8 +65,13 @@ namespace OficinaMVC.Controllers
         }
 
 
-
+        /// <summary>
+        /// Handles user login POST requests.
+        /// </summary>
+        /// <param name="model">The login view model containing user credentials.</param>
+        /// <returns>Redirects on success or returns the login view on failure.</returns>
         [HttpPost]
+        // POST: Account/Login
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -55,10 +84,8 @@ namespace OficinaMVC.Controllers
                 var user = await _userHelper.GetUserByEmailAsync(model.Username);
                 if (user != null)
                 {
-                    // --- THE FIX IS HERE ---
                     var claims = new List<Claim>
             {
-                // Add the essential claims for the user's identity
                 new Claim(ClaimTypes.Name, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
 
@@ -75,7 +102,6 @@ namespace OficinaMVC.Controllers
 
                     await _userHelper.SignInWithClaimsAsync(user, model.RememberMe, claims);
 
-                    // Correct Redirect Logic
                     if (userRoles.Contains("Admin"))
                     {
                         return RedirectToAction("Index", "Admin");
@@ -93,22 +119,38 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Logs out the current user.
+        /// </summary>
+        /// <returns>Redirects to the home page.</returns>
+        // GET: Account/Logout
         public async Task<IActionResult> Logout()
         {
             await _userHelper.LogoutAsync();
             return RedirectToAction("Index", "Home");
         }
 
+        /// <summary>
+        /// Displays the user registration page. Only accessible by Admins.
+        /// </summary>
+        /// <returns>The registration view.</returns>
         [HttpGet]
         [Authorize(Roles = "Admin")]
+        // GET: Account/Register
         public IActionResult Register()
         {
             ViewBag.Roles = RolesHelper.Roles;
             return View();
         }
 
+        /// <summary>
+        /// Handles user registration POST requests. Only accessible by Admins.
+        /// </summary>
+        /// <param name="model">The registration view model.</param>
+        /// <returns>The registration confirmation view or the registration view with errors.</returns>
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        // POST: Account/Register
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
@@ -117,7 +159,6 @@ namespace OficinaMVC.Controllers
                 return View(model);
             }
 
-            // --- Start of significant changes ---
 
             var existingUser = await _userHelper.GetUserByEmailAsync(model.Email);
             if (existingUser != null)
@@ -148,13 +189,11 @@ namespace OficinaMVC.Controllers
                 NIF = model.NIF,
                 PhoneNumber = model.PhoneNumber,
                 ProfileImageUrl = imageUrl,
-                EmailConfirmed = false // Explicitly set to false until user clicks link
+                EmailConfirmed = false
             };
 
-            // 1. Generate a secure, random temporary password
             var tempPassword = GenerateRandomPassword();
 
-            // 2. Create the user with the temporary password
             var result = await _userHelper.AddUserAsync(user, tempPassword);
 
             if (result.Succeeded)
@@ -162,14 +201,12 @@ namespace OficinaMVC.Controllers
                 await _userHelper.CheckRoleAsync(model.Role);
                 await _userHelper.AddUserToRoleAsync(user, model.Role);
 
-                // 3. Generate the EMAIL CONFIRMATION token and link
                 var token = await _userHelper.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = UrlEncoder.Default.Encode(token);
                 var link = Url.Action("ConfirmEmail", "Account",
                     new { userId = user.Id, token = encodedToken },
                     protocol: HttpContext.Request.Scheme);
 
-                // 4. Send the welcome email with the temporary password and confirmation link
                 var response = _mailHelper.SendEmail(
                     user.Email,
                     "Welcome to FredAuto - Your Account is Ready",
@@ -202,30 +239,42 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the form to change the current user's profile information.
+        /// </summary>
+        /// <returns>The change user view.</returns>
         [HttpGet]
+        // GET: Account/ChangeUser
         public async Task<IActionResult> ChangeUser()
         {
-            var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-            if (user == null) return NotFound();
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null) return Unauthorized();
 
             var model = new ChangeUserViewModel
             {
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber
+                PhoneNumber = user.PhoneNumber,
+                CurrentProfileImageUrl = user.ProfileImageUrl
             };
 
             return View(model);
         }
 
+        /// <summary>
+        /// Handles profile update POST requests for the current user.
+        /// </summary>
+        /// <param name="model">The change user view model.</param>
+        /// <returns>The updated profile view or the view with errors.</returns>
         [HttpPost]
+        // POST: Account/ChangeUser
         public async Task<IActionResult> ChangeUser(ChangeUserViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
 
-            var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
-            if (user == null) return NotFound();
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null) return Unauthorized();
 
             string oldImageUrl = user.ProfileImageUrl;
             if (model.ProfileImage != null)
@@ -260,13 +309,24 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the password recovery page.
+        /// </summary>
+        /// <returns>The recover password view.</returns>
         [HttpGet]
+        // GET: Account/RecoverPassword
         public IActionResult RecoverPassword()
         {
             return View();
         }
 
+        /// <summary>
+        /// Handles password recovery POST requests.
+        /// </summary>
+        /// <param name="model">The recover password view model.</param>
+        /// <returns>The password confirmation view or the view with errors.</returns>
         [HttpPost]
+        // POST: Account/RecoverPassword
         public async Task<IActionResult> RecoverPassword(RecoverPasswordViewModel model)
         {
             if (ModelState.IsValid)
@@ -284,7 +344,14 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the reset password page.
+        /// </summary>
+        /// <param name="token">The password reset token.</param>
+        /// <param name="email">The user's email address.</param>
+        /// <returns>The reset password view or error view.</returns>
         [HttpGet]
+        // GET: Account/ResetPassword
         public IActionResult ResetPassword(string token, string email)
         {
             if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
@@ -295,14 +362,25 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the password reset confirmation page.
+        /// </summary>
+        /// <returns>The reset password confirmation view.</returns>
         [HttpGet]
+        // GET: Account/ResetPasswordConfirmation
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
         }
 
+        /// <summary>
+        /// Handles password reset POST requests.
+        /// </summary>
+        /// <param name="model">The reset password view model.</param>
+        /// <returns>Redirects to confirmation or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // POST: Account/ResetPassword
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -331,18 +409,29 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the change password page.
+        /// </summary>
+        /// <returns>The change password view.</returns>
         [HttpGet]
+        // GET: Account/ChangePassword
         public IActionResult ChangePassword()
         {
             return View();
         }
 
+        /// <summary>
+        /// Handles change password POST requests.
+        /// </summary>
+        /// <param name="model">The change password view model.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
+        // POST: Account/ChangePassword
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var user = await _userHelper.GetUserByEmailAsync(User.Identity.Name);
+                var user = await _userService.GetCurrentUserAsync();
                 if (user != null)
                 {
                     var result = await _userHelper.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
@@ -357,17 +446,27 @@ namespace OficinaMVC.Controllers
                     ModelState.AddModelError(string.Empty, "User not found.");
                 }
             }
-
             return View(model);
         }
 
+        /// <summary>
+        /// Displays the not authorized page.
+        /// </summary>
+        /// <returns>The not authorized view.</returns>
         [HttpGet]
+        // GET: Account/NotAuthorized
         public IActionResult NotAuthorized()
         {
             return View();
         }
 
+        /// <summary>
+        /// Creates a JWT token for API authentication.
+        /// </summary>
+        /// <param name="model">The login view model.</param>
+        /// <returns>The JWT token or a bad request result.</returns>
         [HttpPost]
+        // POST: Account/CreateToken
         public async Task<IActionResult> CreateToken([FromBody] LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -410,6 +509,11 @@ namespace OficinaMVC.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Generates a random password with the specified length.
+        /// </summary>
+        /// <param name="length">The length of the password.</param>
+        /// <returns>A random password string.</returns>
         private static string GenerateRandomPassword(int length = 12)
         {
             const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
@@ -427,7 +531,14 @@ namespace OficinaMVC.Controllers
             return password.ToString();
         }
 
+        /// <summary>
+        /// Confirms a user's email address using a token.
+        /// </summary>
+        /// <param name="userId">The user's ID.</param>
+        /// <param name="token">The email confirmation token.</param>
+        /// <returns>The confirmation view with a message.</returns>
         [HttpGet]
+        // GET: Account/ConfirmEmail
         public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
@@ -443,8 +554,6 @@ namespace OficinaMVC.Controllers
                 return View();
             }
 
-            // You can't confirm an email for a user who is already confirmed.
-            // This prevents re-using the link.
             if (user.EmailConfirmed)
             {
                 ViewBag.Message = "This email address has already been confirmed.";
@@ -460,10 +569,6 @@ namespace OficinaMVC.Controllers
                 return View();
             }
 
-            // --- SUCCESS! ---
-            // This is the new key step: Automatically log the user in.
-
-            // We must build the claims identity correctly, just like in the Login method.
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Email),
@@ -478,12 +583,9 @@ namespace OficinaMVC.Controllers
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            // Sign the user in with these claims. The 'isPersistent: false' means it's a session cookie.
             await _signInManager.SignInWithClaimsAsync(user, isPersistent: false, claims);
 
             ViewBag.Message = "Your email address has been successfully confirmed!";
-
-            // Now, render the view. The user is logged in.
             return View();
         }
     }

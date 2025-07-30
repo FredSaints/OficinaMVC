@@ -1,4 +1,10 @@
-﻿$(document).ready(function () {
+﻿/**
+ * Handles appointment creation form logic: dynamic dropdowns, date picker, and mechanic availability.
+ * Integrates with flatpickr for date selection and uses AJAX for dynamic data.
+ *
+ * Dependencies: jQuery, flatpickr
+ */
+$(document).ready(function () {
     // --- Get all the form elements ---
     const clientSelect = $('#ClientId');
     const vehicleSelect = $('#VehicleId');
@@ -9,6 +15,12 @@
     let unavailableDates = [];
 
     // --- Date Picker Logic ---
+    /**
+     * Fetches unavailable appointment days for the given month/year and updates the unavailableDates array.
+     * @param {number} year - The year to fetch unavailable days for.
+     * @param {number} month - The month (0-based) to fetch unavailable days for.
+     * @param {function} [callback] - Optional callback to run after data is loaded.
+     */
     function fetchUnavailableDays(year, month, callback) {
         $.getJSON(`/Appointment/GetUnavailableDays?year=${year}&month=${month + 1}`, function (data) {
             unavailableDates = data;
@@ -34,6 +46,9 @@
     });
 
     // --- AJAX Functions ---
+    /**
+     * Fetches available mechanics for the selected appointment date and updates the dropdown.
+     */
     function fetchAvailableMechanics() {
         const appointmentDate = appointmentDateInput.val();
         mechanicSelect.empty().append('<option value="">Loading...</option>').prop('disabled', true);
@@ -45,11 +60,9 @@
                     mechanicSelect.empty();
                     if (data && data.length > 0) {
                         mechanicSelect.prop('disabled', false);
-
                         $.each(data, function (index, item) {
                             mechanicSelect.append($('<option>', { value: item.value, text: item.text }));
                         });
-
                     } else {
                         mechanicSelect.append('<option value="">No mechanics available</option>');
                     }
@@ -64,12 +77,18 @@
     }
 
     // --- Event Handlers ---
+    /**
+     * Event handler: fetch mechanics when the appointment date changes.
+     */
     appointmentDateInput.on('change', fetchAvailableMechanics);
 
+    /**
+     * Event handler: fetch vehicles when the client changes, and disable submit until valid.
+     */
     clientSelect.on('change', function () {
         const clientId = $(this).val();
         vehicleSelect.empty().append('<option value="">Loading...</option>').prop('disabled', true);
-        submitButton.prop('disabled', true); // ALWAYS disable button on client change
+        submitButton.prop('disabled', true);
 
         if (clientId) {
             $.getJSON(`/Appointment/GetVehiclesByClient?clientId=${clientId}`)
@@ -90,6 +109,9 @@
     });
 
     // Enable button only when a valid vehicle is selected
+    /**
+     * Event handler: enable submit button only when a valid vehicle is selected.
+     */
     vehicleSelect.on('change', function () {
         if ($(this).val()) {
             submitButton.prop('disabled', false);

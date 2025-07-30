@@ -73,7 +73,7 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td class="ps-4 fw-semibold">@item.StartDate.ToString("g")</td>
+                            <td class="ps-4 fw-semibold">@ViewHelper.FormatUtcDate(item.StartDate)</td>
                             <td>@item.Vehicle.LicensePlate (@item.Vehicle.CarModel.Brand.Name)</td>
                             <td>@item.Vehicle.Owner.FullName</td>
                             <td>

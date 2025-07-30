@@ -4,15 +4,21 @@ using OficinaMVC.Models.Home;
 
 namespace OficinaMVC.Services
 {
+    /// <inheritdoc cref="IHomeService"/>
     public class HomeService : IHomeService
     {
         private readonly DataContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HomeService"/> class.
+        /// </summary>
+        /// <param name="context">The database context for data access.</param>
         public HomeService(DataContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc />
         public async Task<HomeViewModel> GetHomeViewModelAsync()
         {
             var services = await _context.RepairTypes.ToListAsync();

@@ -5,8 +5,12 @@ using System.Threading.Tasks;
 
 namespace OficinaMVC.Helpers
 {
+    /// <summary>
+    /// Provides functionality to upload images to the server.
+    /// </summary>
     public class ImageHelper : IImageHelper
     {
+        /// <inheritdoc />
         public async Task<string> UploadImageAsync(IFormFile imageFile, string folder)
         {
             string guid = Guid.NewGuid().ToString();

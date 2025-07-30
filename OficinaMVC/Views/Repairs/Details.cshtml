@@ -41,9 +41,9 @@
                             }
                         </dd>
                         <dt class="col-sm-3">Start Date</dt>
-                        <dd class="col-sm-9">@Model.StartDate.ToString("g")</dd>
+                        <dd class="col-sm-9">@ViewHelper.FormatUtcDate(Model.StartDate)</dd>
                         <dt class="col-sm-3">End Date</dt>
-                        <dd class="col-sm-9">@Model.EndDate?.ToString("g")</dd>
+                        <dd class="col-sm-9">@ViewHelper.FormatUtcDate(Model.EndDate)</dd>
                         <dt class="col-sm-3">Description</dt>
                         <dd class="col-sm-9"><pre style="font-family: inherit; white-space: pre-wrap;">@Model.Description</pre></dd>
                     </dl>

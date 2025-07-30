@@ -1,8 +1,6 @@
 ﻿@model OficinaMVC.Data.Entities.Repair
-@inject OficinaMVC.Data.Repositories.IPartRepository PartRepository
 @{
     ViewData["Title"] = "Manage Repair";
-    var partsList = new SelectList(await PartRepository.GetAllAsync(), "Id", "Name");
 }
 
 <div class="row justify-content-center">
@@ -46,13 +44,9 @@
                 <form asp-action="UpdateMechanics" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="repairId" value="@Model.Id" />
-
                     <div class="mb-3">
                         <label for="selectedMechanicIds" class="form-label fw-bold">Select and Assign Mechanics</label>
-                        <!-- **** START OF CHANGE **** -->
-                        <!-- The ListBox now has a unique ID for the JavaScript to target -->
                         @Html.ListBox("selectedMechanicIds", (MultiSelectList)ViewBag.AllMechanics, new { @class = "form-control", id = "mechanics-select" })
-                        <!-- **** END OF CHANGE **** -->
                     </div>
                     <div class="text-end">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-person-check-fill me-1"></i> Update Assigned Mechanics</button>
@@ -105,7 +99,7 @@
                     <input type="hidden" name="repairId" value="@Model.Id" />
                     <div class="col-md-5">
                         <label for="partIdSelect" class="form-label">Add Part</label>
-                        <select name="partId" id="partIdSelect" class="form-select" asp-items="partsList"><option value="">Select a part...</option></select>
+                        <select name="partId" id="partIdSelect" class="form-select" asp-items="ViewBag.PartsList as SelectList"><option value="">Select a part...</option></select>
                     </div>
                     <div class="col-md-2">
                         <label for="quantityInput" class="form-label">Quantity</label>
@@ -161,21 +155,17 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
-    <!-- **** START OF NEW SCRIPT SECTION **** -->
     <script>
         $(document).ready(function() {
-            // Initialize Select2 on the mechanics dropdown
             $('#mechanics-select').select2({
                 theme: "bootstrap-5",
                 placeholder: "Search and select mechanics...",
-                width: '100%' // Ensure it takes the full width of its container
+                width: '100%'
             });
         });
     </script>
-    <!-- **** END OF NEW SCRIPT SECTION **** -->
 
     <script>
-        // Existing script for stock checking
         $(document).ready(function() {
             const partSelect = $('#partIdSelect');
             const quantityInput = $('#quantityInput');

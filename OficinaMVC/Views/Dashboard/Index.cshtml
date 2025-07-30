@@ -1,7 +1,7 @@
 ﻿@model OficinaMVC.Models.Dashboard.DashboardViewModel
 @{
     ViewData["Title"] = "Workshop Dashboard";
-    Layout = "_Layout"; // Make sure it uses the main layout
+    Layout = "_Layout";
 }
 
 @section Styles {
@@ -31,8 +31,6 @@
                     </div>
                 </div>
             </div>
-            @if (User.IsInRole("Receptionist"))
-            {
                 <div class="col-lg-4 col-md-12">
                     <div class="kpi-card @(Model.LowStockPartsCount > 0 ? "kpi-card-danger" : "kpi-card-success")">
                         <div class="card-body p-4">
@@ -42,7 +40,6 @@
                         </div>
                     </div>
                 </div>
-            }
         </div>
 
         <div class="row g-4">
@@ -69,12 +66,12 @@
                                     <div class="list-group-item list-group-item-action">
                                         <div class="d-flex w-100 justify-content-between">
                                             <div>
-                                                <h6 class="mb-1">@appt.AppointmentTime.ToString("t") - @appt.ServiceType</h6>
+                                                <h6 class="mb-1">@ViewHelper.FormatUtcDate(appt.AppointmentTime, "t") - @appt.ServiceType</h6>
                                                 <p class="mb-1 text-muted">@appt.ClientName - @appt.VehicleInfo</p>
                                                 <small class="text-muted">Mechanic: @appt.MechanicName</small>
                                             </div>
                                             <div class="d-flex align-items-center">
-                                                @if (appt.RepairId.HasValue)
+                                                @if (appt.RepairId.HasValue && appt.RepairId > 0)
                                                 {
                                                     <a asp-controller="Repairs" asp-action="Details" asp-route-id="@appt.RepairId" class="btn btn-action btn-view">
                                                         <i class="bi bi-search me-1"></i> View
@@ -121,7 +118,7 @@
                                             <div>
                                                 <h6 class="mb-1">@repair.LicensePlate (@repair.VehicleDescription)</h6>
                                                 <p class="mb-1 text-muted">Client: @repair.ClientName</p>
-                                                <small class="text-muted">Started: @repair.StartDate.ToString("g")</small>
+                                                <small class="text-muted">Started: @ViewHelper.FormatUtcDate(repair.StartDate)</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <a asp-controller="Repairs" asp-action="Edit" asp-route-id="@repair.RepairId" class="btn btn-action btn-manage">

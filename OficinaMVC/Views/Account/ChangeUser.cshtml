@@ -1,25 +1,31 @@
-﻿@model OficinaMVC.Models.ChangeUserViewModel
+﻿@using OficinaMVC.Models.Accounts
+@model ChangeUserViewModel
 @{
     ViewData["Title"] = "My Profile";
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-8 col-xl-7">
-
-        <div class="text-center">
-            <h2 class="mt-4 mb-1">@ViewData["Title"]</h2>
-            <p class="text-muted">Update your personal information and profile picture.</p>
-        </div>
-
-        <div class="card shadow-sm mt-4">
+        <div class="card shadow-lg border-0 mt-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h2 class="mb-0 text-center">
+                    <i class="bi bi-person-gear me-2"></i>@ViewData["Title"]
+                </h2>
+            </div>
             <div class="card-body p-4 p-md-5">
-                <form method="post" enctype="multipart/form-data">
-                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+                <p class="text-muted text-center mb-4">
+                    Update your personal information and profile picture.
+                </p>
+
+                <!-- Add the 'id' attribute to the form tag -->
+                <form method="post" enctype="multipart/form-data" id="changeUserForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                     @if (ViewBag.Message != null)
                     {
-                        <div class="alert alert-success">
-                            <i class="bi bi-check-circle-fill me-2"></i>@ViewBag.Message
+                        <div class="alert alert-success d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            @ViewBag.Message
                         </div>
                     }
 
@@ -58,13 +64,18 @@
                             <span asp-validation-for="ProfileImage" class="text-danger small"></span>
                         </div>
                     </div>
-
-
-                    <div class="d-flex justify-content-end align-items-center mt-5 gap-2">
-                        <a asp-action="ChangePassword" class="btn btn-secondary btn-lg"><i class="bi bi-shield-lock me-1"></i>Change Password</a>
-                        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save me-1"></i>Save Changes</button>
-                    </div>
                 </form>
+            </div>
+            <div class="card-footer bg-light p-3">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <a asp-action="ChangePassword" class="btn btn-secondary btn-lg">
+                        <i class="bi bi-shield-lock me-1"></i>Change Password
+                    </a>
+                    <!-- This button is now correctly linked to the form above -->
+                    <button type="submit" form="changeUserForm" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save me-1"></i>Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>

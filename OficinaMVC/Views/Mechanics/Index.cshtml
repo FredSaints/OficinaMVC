@@ -1,14 +1,40 @@
 ﻿@model IEnumerable<OficinaMVC.Data.Entities.User>
 @{
-    ViewData["Title"] = "Mechanics";
+    ViewData["Title"] = "Manage Staff";
 }
 
-<h2 class="mt-4 mb-3">Mechanics</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center mt-4 mb-3 gap-3">
+    <h2 class="mb-0 text-primary">
+        <i class="bi bi-person-badge-fill me-2"></i>@ViewData["Title"]
+    </h2>
+
+    <div class="d-flex align-items-center gap-2">
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="searchType" id="searchName" value="name"
+                       @(ViewData["CurrentSearchType"] as string != "nif" ? "checked" : "") autocomplete="off">
+                <label class="btn btn-outline-secondary" for="searchName" title="Search by Name"><i class="bi bi-person"></i></label>
+
+                <input type="radio" class="btn-check" name="searchType" id="searchNIF" value="nif"
+                       @(ViewData["CurrentSearchType"] as string == "nif" ? "checked" : "") autocomplete="off">
+                <label class="btn btn-outline-secondary" for="searchNIF" title="Search by NIF"><i class="bi bi-card-text"></i></label>
+            </div>
+
+            <div class="input-group" style="max-width: 250px;">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" id="searchInput" placeholder="Search..." />
+                <button type="submit" class="btn btn-primary" title="Search"><i class="bi bi-search"></i></button>
+            </div>
+
+            <a asp-action="Index" class="btn btn-secondary" title="Clear Filter"><i class="bi bi-x-lg"></i></a>
+        </form>
+    </div>
+</div>
+
 
 @if (!Model.Any())
 {
     <div class="alert alert-info">
-        No mechanics found.
+        No mechanics found matching your criteria.
     </div>
 }
 else
@@ -21,7 +47,7 @@ else
                 <th>Email</th>
                 <th>NIF</th>
                 <th>Phone</th>
-                <th style="width:120px;"></th>
+                <th class="text-end pe-4" style="width:120px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -45,7 +71,7 @@ else
                     <td>@mechanic.Email</td>
                     <td>@mechanic.NIF</td>
                     <td>@mechanic.PhoneNumber</td>
-                    <td>
+                    <td class="text-end pe-4">
                         <a asp-action="Edit" asp-route-id="@mechanic.Id" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil"></i> Edit
                         </a>
@@ -54,4 +80,26 @@ else
             }
         </tbody>
     </table>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameRadio = document.getElementById('searchName');
+            const nifRadio = document.getElementById('searchNIF');
+            const searchInput = document.getElementById('searchInput');
+
+            function updatePlaceholder() {
+                if (nifRadio.checked) {
+                    searchInput.placeholder = 'Search by NIF...';
+                } else {
+                    searchInput.placeholder = 'Search by Name...';
+                }
+            }
+
+            nameRadio.addEventListener('change', updatePlaceholder);
+            nifRadio.addEventListener('change', updatePlaceholder);
+            updatePlaceholder();
+        });
+    </script>
 }

@@ -10,22 +10,42 @@ namespace OficinaMVC.Controllers
     {
         private readonly IRepairTypeRepository _repository;
 
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RepairTypeController"/> class.
+        /// </summary>
+        /// <param name="repository">Repository for repair type data access.</param>
         public RepairTypeController(IRepairTypeRepository repository)
         {
             _repository = repository;
         }
 
+
+        /// <summary>
+        /// Displays a list of all repair types.
+        /// </summary>
+        /// <returns>The repair types index view.</returns>
         public async Task<IActionResult> Index()
         {
             var types = await _repository.GetAllAsync();
             return View(types);
         }
 
+
+        /// <summary>
+        /// Displays the repair type creation form.
+        /// </summary>
+        /// <returns>The create repair type view.</returns>
         public IActionResult Create()
         {
             return View();
         }
 
+        /// <summary>
+        /// Handles repair type creation POST requests.
+        /// </summary>
+        /// <param name="model">The repair type entity to create.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RepairType model)
@@ -45,6 +65,12 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+
+        /// <summary>
+        /// Displays the edit form for a repair type.
+        /// </summary>
+        /// <param name="id">The repair type ID.</param>
+        /// <returns>The edit repair type view or not found.</returns>
         public async Task<IActionResult> Edit(int id)
         {
             var type = await _repository.GetByIdAsync(id);
@@ -52,6 +78,12 @@ namespace OficinaMVC.Controllers
             return View(type);
         }
 
+        /// <summary>
+        /// Handles repair type edit POST requests.
+        /// </summary>
+        /// <param name="id">The repair type ID.</param>
+        /// <param name="model">The repair type entity with updated data.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, RepairType model)
@@ -73,6 +105,12 @@ namespace OficinaMVC.Controllers
             return View(model);
         }
 
+
+        /// <summary>
+        /// Displays the delete confirmation page for a repair type.
+        /// </summary>
+        /// <param name="id">The repair type ID.</param>
+        /// <returns>The delete confirmation view or not found.</returns>
         public async Task<IActionResult> Delete(int id)
         {
             var type = await _repository.GetByIdAsync(id);
@@ -80,6 +118,11 @@ namespace OficinaMVC.Controllers
             return View(type);
         }
 
+        /// <summary>
+        /// Handles repair type deletion POST requests.
+        /// </summary>
+        /// <param name="id">The repair type ID.</param>
+        /// <returns>Redirects to the repair types index or shows an error if the type is in use.</returns>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -99,6 +142,12 @@ namespace OficinaMVC.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+
+        /// <summary>
+        /// Displays the details of a specific repair type.
+        /// </summary>
+        /// <param name="id">The repair type ID.</param>
+        /// <returns>The repair type details view or not found.</returns>
         public async Task<IActionResult> Details(int id)
         {
             var type = await _repository.GetByIdAsync(id);

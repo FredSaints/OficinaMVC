@@ -6,21 +6,32 @@ using System.Security.Claims;
 
 namespace OficinaMVC.Services
 {
+    /// <inheritdoc cref="IDashboardService"/>
     public class DashboardService : IDashboardService
     {
         private readonly DataContext _context;
         private readonly IUserHelper _userHelper;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DashboardService"/> class.
+        /// </summary>
+        /// <param name="context">The database context for data access.</param>
+        /// <param name="userHelper">The user helper service for user-related operations.</param>
         public DashboardService(DataContext context, IUserHelper userHelper)
         {
             _context = context;
             _userHelper = userHelper;
         }
 
+        /// <inheritdoc />
         public async Task<DashboardViewModel> GetDashboardViewModelAsync(ClaimsPrincipal userPrincipal)
         {
-            var today = DateTime.Today;
+            var today = DateTime.UtcNow.Date;
             var user = await _userHelper.GetUserByEmailAsync(userPrincipal.Identity.Name);
+            if (user == null)
+            {
+                return new DashboardViewModel { TodaysAppointments = new(), OngoingRepairs = new(), LowStockParts = new(), AppointmentsChartData = new() };
+            }
 
             var appointmentsQuery = _context.Appointments.AsQueryable();
             var ongoingRepairsQuery = _context.Repairs.Where(r => r.Status == "Ongoing");
@@ -53,7 +64,8 @@ namespace OficinaMVC.Services
         private async Task<List<AppointmentViewModel>> GetTodaysAppointmentsAsync(IQueryable<Data.Entities.Appointment> query, DateTime today)
         {
             return await query
-                .Where(a => a.Date.Date == today)
+                .Where(a => a.Date.Date == today &&
+                            a.RepairId == null)
                 .Include(a => a.Client)
                 .Include(a => a.Mechanic)
                 .Include(a => a.Vehicle).ThenInclude(v => v.CarModel)

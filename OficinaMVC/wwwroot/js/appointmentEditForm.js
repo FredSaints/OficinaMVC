@@ -1,4 +1,10 @@
-﻿$(document).ready(function () {
+﻿/**
+ * Handles mechanic selection and date picker logic for the appointment edit form.
+ * Fetches available mechanics dynamically based on the selected date.
+ *
+ * Dependencies: jQuery, flatpickr
+ */
+$(document).ready(function () {
     const appointmentDateInput = $('#AppointmentDate');
     const mechanicSelect = $('#MechanicId');
     const mechanicSpinner = $('#mechanic-spinner');
@@ -13,6 +19,10 @@
         // You can add back the 'disable' logic for full days if you wish
     });
 
+    /**
+     * Fetches available mechanics for the selected appointment date and updates the dropdown.
+     * Attempts to re-select the original mechanic if still available.
+     */
     function fetchAvailableMechanics() {
         const appointmentDate = appointmentDateInput.val();
         const originalMechanicId = mechanicSelect.data('original-mechanic-id'); // Store the initial ID
@@ -54,10 +64,14 @@
     }
 
     // --- Event Handler ---
+    /**
+     * Event handler: fetch mechanics when the appointment date changes.
+     */
     appointmentDateInput.on('change', fetchAvailableMechanics);
 
     // --- Initial State ---
     // Store the initial mechanic ID on page load
+    // Store the initial mechanic ID on page load and fetch mechanics for the initial date
     mechanicSelect.data('original-mechanic-id', mechanicSelect.val());
-    fetchAvailableMechanics(); // Run once on page load
+    fetchAvailableMechanics();
 });

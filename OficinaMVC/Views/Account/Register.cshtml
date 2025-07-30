@@ -1,60 +1,78 @@
 ﻿@using OficinaMVC.Helpers
-@model OficinaMVC.Models.RegisterViewModel
+@using OficinaMVC.Models.Accounts
+@model RegisterViewModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Add New User";
 }
 
-<h2>Register</h2>
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
 
-<div class="row">
-    <div class="col-md-4 offset-md-4">
-        <form method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="text-center mt-4 mb-3">
+            <h2 class="mb-0 text-primary">
+                <i class="bi bi-person-plus-fill me-2"></i>@ViewData["Title"]
+            </h2>
+            <p class="text-muted">Create a new account for a staff member or client.</p>
+        </div>
 
-            <div class="mb-3">
-                <label asp-for="FirstName" class="form-label"></label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-warning"></span>
-            </div>
+        <form method="post" enctype="multipart/form-data" class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-            <div class="mb-3">
-                <label asp-for="LastName" class="form-label"></label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-warning"></span>
-            </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="FirstName" class="form-label"></label>
+                        <input asp-for="FirstName" class="form-control form-control-lg" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="LastName" class="form-label"></label>
+                        <input asp-for="LastName" class="form-control form-control-lg" />
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
+                    </div>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-warning"></span>
-            </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control form-control-lg" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <input asp-for="PhoneNumber" class="form-control form-control-lg" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                    </div>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="PhoneNumber" class="form-label"></label>
-                <input asp-for="PhoneNumber" class="form-control" />
-                <span asp-validation-for="PhoneNumber" class="text-warning"></span>
-            </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="NIF" class="form-label"></label>
+                        <input asp-for="NIF" class="form-control form-control-lg" />
+                        <span asp-validation-for="NIF" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Role" class="form-label"></label>
+                        <select asp-for="Role" class="form-select form-select-lg" asp-items="@(new SelectList(RolesHelper.Roles, "Client"))">
+                            <option value="">Select a role...</option>
+                        </select>
+                        <span asp-validation-for="Role" class="text-danger small"></span>
+                    </div>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="NIF" class="form-label"></label>
-                <input asp-for="NIF" class="form-control" />
-                <span asp-validation-for="NIF" class="text-warning"></span>
+                <div class="mb-3">
+                    <label asp-for="ProfileImage" class="form-label"></label>
+                    <input asp-for="ProfileImage" class="form-control form-control-lg" type="file" accept="image/*" />
+                    <span asp-validation-for="ProfileImage" class="text-danger small"></span>
+                </div>
             </div>
-
-            <div class="mb-3">
-                <label asp-for="Role" class="form-label"></label>
-                <select asp-for="Role" class="form-select" asp-items="@(new SelectList(RolesHelper.Roles))"></select>
-                <span asp-validation-for="Role" class="text-warning"></span>
-            </div>
-       
-            <div class="mb-3">
-                <label asp-for="ProfileImage" class="form-label"></label>
-                <input asp-for="ProfileImage" class="form-control" type="file" accept="image/*" />
-                <span asp-validation-for="ProfileImage" class="text-warning"></span>
-            </div>
-            <div class="mb-3 d-flex">
-                <button type="submit" class="btn btn-primary me-2">Register</button>
-                <a asp-action="Login" class="btn btn-secondary">Back to login</a>
+            <div class="card-footer bg-light text-end p-3">
+                <a asp-controller="Admin" asp-action="Index" class="btn btn-secondary btn-lg px-4 me-2">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-check-circle me-1"></i> Register User
+                </button>
             </div>
         </form>
     </div>

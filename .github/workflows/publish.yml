@@ -1,0 +1,36 @@
+name: Build and Deploy OficinaMVC to Production
+
+on:
+  push:
+    branches: [ "main" ] # This workflow runs on every push to the main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore NuGet Packages
+      run: dotnet restore ./OficinaMVC/OficinaMVC.csproj
+
+    - name: Build Application in Release Mode
+      run: dotnet build ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-restore
+
+    - name: Publish Application
+      run: dotnet publish ./OficinaMVC/OficinaMVC.csproj --configuration Release --no-build -o ./publish
+
+    - name: Deploy to MonsterASP.net via WebDeploy
+      uses: microsoft/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.WEBSITE_NAME }}
+        server-computer-name: ${{ secrets.SERVER_COMPUTER_NAME }}
+        server-username: ${{ secrets.SERVER_USERNAME }}
+        server-password: ${{ secrets.SERVER_PASSWORD }}
+        package: ./publish

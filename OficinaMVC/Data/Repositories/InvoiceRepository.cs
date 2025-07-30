@@ -3,15 +3,29 @@ using OficinaMVC.Data.Entities;
 
 namespace OficinaMVC.Data.Repositories
 {
+    /// <summary>
+    /// Repository for handling data operations for <see cref="Invoice"/> entities.
+    /// </summary>
     public class InvoiceRepository : IInvoiceRepository
     {
         private readonly DataContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InvoiceRepository"/> class.
+        /// </summary>
+        /// <param name="context">The database context.</param>
         public InvoiceRepository(DataContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc/>
+        public async Task<Invoice> GetByIdAsync(int invoiceId)
+        {
+            return await _context.Invoices.FindAsync(invoiceId);
+        }
+
+        /// <inheritdoc/>
         public async Task<Invoice> GenerateInvoiceForRepairAsync(int repairId)
         {
             var existingInvoice = await GetByRepairIdAsync(repairId);
@@ -32,7 +46,7 @@ namespace OficinaMVC.Data.Repositories
             var newInvoice = new Invoice
             {
                 RepairId = repair.Id,
-                InvoiceDate = DateTime.Now,
+                InvoiceDate = DateTime.UtcNow,
                 Subtotal = subtotal,
                 TaxAmount = taxAmount,
                 TotalAmount = totalAmount,
@@ -55,16 +69,24 @@ namespace OficinaMVC.Data.Repositories
             return newInvoice;
         }
 
-        public async Task<IEnumerable<Invoice>> GetAllWithDetailsAsync()
+        /// <inheritdoc/>
+        public async Task<IEnumerable<Invoice>> GetAllWithDetailsAsync(bool showAll = false)
         {
-            return await _context.Invoices
+            var query = _context.Invoices
                 .Include(i => i.Repair)
                 .ThenInclude(r => r.Vehicle)
                 .ThenInclude(v => v.Owner)
-                .OrderByDescending(i => i.InvoiceDate)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!showAll)
+            {
+                query = query.Where(i => i.Status == "Unpaid");
+            }
+
+            return await query.OrderByDescending(i => i.InvoiceDate).ToListAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<Invoice> GetByIdWithDetailsAsync(int invoiceId)
         {
             return await _context.Invoices
@@ -74,10 +96,18 @@ namespace OficinaMVC.Data.Repositories
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
         }
 
+        /// <inheritdoc/>
         public async Task<Invoice> GetByRepairIdAsync(int repairId)
         {
             return await _context.Invoices
                 .FirstOrDefaultAsync(i => i.RepairId == repairId);
+        }
+
+        /// <inheritdoc/>
+        public async Task UpdateInvoiceAsync(Invoice invoice)
+        {
+            _context.Invoices.Update(invoice);
+            await _context.SaveChangesAsync();
         }
     }
 }

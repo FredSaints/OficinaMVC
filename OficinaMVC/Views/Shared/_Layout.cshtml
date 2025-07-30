@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OficinaMVC.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 
     <!-- Embedded Layout Styles -->
@@ -171,12 +172,12 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarContent">
-                    <!-- Centered, Role-based Navigation -->
                     <ul class="navbar-nav w-100 justify-content-center">
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Admin" asp-action="Index"><i class="bi bi-gear-wide-connected me-1"></i>Admin Panel</a></li>
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus-fill me-1"></i>Add User</a></li>
+                            <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Users" asp-action="Index"><i class="bi bi-people-fill me-1"></i>Manage Users</a></li>
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Mechanics" asp-action="Index"><i class="bi bi-person-badge-fill me-1"></i>Staff</a></li>
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Brands" asp-action="Index"><i class="bi bi-globe2 me-1"></i>Brands</a></li>
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="CarModels" asp-action="Index"><i class="bi bi-boxes me-1"></i>Models</a></li>
@@ -199,13 +200,13 @@
                         else if (User.IsInRole("Client"))
                         {
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Vehicle" asp-action="Index"><i class="bi bi-car-front-fill me-1"></i>My Vehicles</a></li>
-                            <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Appointment" asp-action="My"><i class="bi bi-calendar-check me-1"></i>My Appointments</a></li>
+                            <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Appointment" asp-action="MyAppointments"><i class="bi bi-calendar-check me-1"></i>My Appointments</a></li>
                         }
                         else
                         {
                             <li class="nav-item mx-1"><a class="nav-link text-white" asp-controller="Home" asp-action="Index"><i class="bi bi-house-door me-1"></i>Home</a></li>
-                            <li class="nav-item mx-1"><a class="nav-link text-white scroll-link" href="#services-section"><i class="bi bi-wrench me-1"></i>Services</a></li>
-                            <li class="nav-item mx-1"><a class="nav-link text-white scroll-link" href="#contact-section"><i class="bi bi-telephone me-1"></i>Contact</a></li>
+                            <li class="nav-item mx-1"><a class="nav-link text-white scroll-link" href="#services"><i class="bi bi-wrench me-1"></i>Services</a></li>
+                            <li class="nav-item mx-1"><a class="nav-link text-white scroll-link" href="#contacts"><i class="bi bi-telephone me-1"></i>Contact</a></li>
                         }
                     </ul>
 
@@ -292,19 +293,22 @@
                 <a asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy</a>
                 <span class="mx-2">|</span>
                 <a asp-controller="Home" asp-action="Terms" class="text-decoration-none">Terms</a>
+                <span class="mx-2">|</span>
+                <a asp-controller="Home" asp-action="About" class="text-decoration-none">About</a>
             </p>
         </div>
     </footer>
-
+    <partial name="_ChatbotPartial" />
     <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/fp1fr7zgyy3ssl8p8jx4z1uyl7c1bpai8kufxq5izc08f0b3/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/chatbot.js" asp-append-version="true"></script>
 
     <!-- Smooth scrolling for anchor links -->
     <script>
@@ -312,11 +316,13 @@
             document.querySelectorAll('.scroll-link').forEach(anchor => {
                 anchor.addEventListener('click', function(e) {
                     e.preventDefault();
+
                     const targetId = this.getAttribute('href');
-                    const targetElement = document.querySelector(targetId);
+                    const targetElement = document.getElementById(targetId.substring(1));
+
                     if (targetElement) {
                         window.scrollTo({
-                            top: targetElement.offsetTop - 100,
+                            top: targetElement.offsetTop - 76,
                             behavior: 'smooth'
                         });
                     }

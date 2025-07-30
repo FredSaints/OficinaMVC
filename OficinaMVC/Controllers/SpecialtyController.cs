@@ -10,12 +10,21 @@ namespace OficinaMVC.Controllers
     {
         private readonly ISpecialtyRepository _specialtyRepository;
 
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SpecialtyController"/> class.
+        /// </summary>
+        /// <param name="specialtyRepository">Repository for specialty data access.</param>
         public SpecialtyController(ISpecialtyRepository specialtyRepository)
         {
             _specialtyRepository = specialtyRepository;
         }
 
         // GET: Specialty
+        /// <summary>
+        /// Displays a list of all specialties.
+        /// </summary>
+        /// <returns>The specialties index view.</returns>
         public async Task<IActionResult> Index()
         {
             var specialties = await _specialtyRepository.GetAllAsync();
@@ -23,6 +32,10 @@ namespace OficinaMVC.Controllers
         }
 
         // GET: Specialty/Create
+        /// <summary>
+        /// Displays the specialty creation form.
+        /// </summary>
+        /// <returns>The create specialty view.</returns>
         public IActionResult Create()
         {
             return View();
@@ -31,6 +44,11 @@ namespace OficinaMVC.Controllers
         // POST: Specialty/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Handles specialty creation POST requests.
+        /// </summary>
+        /// <param name="model">The specialty entity to create.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         public async Task<IActionResult> Create(Specialty model)
         {
             if (ModelState.IsValid)
@@ -49,6 +67,11 @@ namespace OficinaMVC.Controllers
         }
 
         // GET: Specialty/Edit/5
+        /// <summary>
+        /// Displays the edit form for a specialty.
+        /// </summary>
+        /// <param name="id">The specialty ID.</param>
+        /// <returns>The edit specialty view or not found.</returns>
         public async Task<IActionResult> Edit(int id)
         {
             var specialty = await _specialtyRepository.GetByIdAsync(id);
@@ -59,6 +82,12 @@ namespace OficinaMVC.Controllers
         // POST: Specialty/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Handles specialty edit POST requests.
+        /// </summary>
+        /// <param name="id">The specialty ID.</param>
+        /// <param name="model">The specialty entity with updated data.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         public async Task<IActionResult> Edit(int id, Specialty model)
         {
             if (id != model.Id) return NotFound();
@@ -79,6 +108,11 @@ namespace OficinaMVC.Controllers
         }
 
         // GET: Specialty/Delete/5
+        /// <summary>
+        /// Displays the delete confirmation page for a specialty.
+        /// </summary>
+        /// <param name="id">The specialty ID.</param>
+        /// <returns>The delete confirmation view or not found.</returns>
         public async Task<IActionResult> Delete(int id)
         {
             var specialty = await _specialtyRepository.GetByIdAsync(id);
@@ -88,6 +122,11 @@ namespace OficinaMVC.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Handles specialty deletion POST requests.
+        /// </summary>
+        /// <param name="id">The specialty ID.</param>
+        /// <returns>Redirects to the specialties index or shows an error if the specialty is in use.</returns>
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var specialty = await _specialtyRepository.GetByIdAsync(id);

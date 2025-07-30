@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace OficinaMVC.Controllers
 {
+    /// <summary>
+    /// Controller for managing mechanics, their specialties, and schedules. Accessible only by Admins.
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class MechanicsController : Controller
     {
@@ -15,6 +18,12 @@ namespace OficinaMVC.Controllers
         private readonly ISpecialtyRepository _specialtyRepository;
         private readonly IMechanicRepository _mechanicRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MechanicsController"/> class.
+        /// </summary>
+        /// <param name="userHelper">Helper for user management operations.</param>
+        /// <param name="specialtyRepository">Repository for specialty data access.</param>
+        /// <param name="mechanicRepository">Repository for mechanic data access.</param>
         public MechanicsController(
             IUserHelper userHelper,
             ISpecialtyRepository specialtyRepository,
@@ -25,13 +34,38 @@ namespace OficinaMVC.Controllers
             _mechanicRepository = mechanicRepository;
         }
 
+        /// <summary>
+        /// Displays a list of all mechanics.
+        /// </summary>
+        /// <returns>The mechanics index view.</returns>
         // GET: Mechanics
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, string searchType = "name")
         {
-            var users = await _userHelper.GetUsersInRoleAsync("Mechanic");
-            return View(users);
+            var mechanics = await _userHelper.GetUsersInRoleAsync("Mechanic");
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                if (searchType == "nif")
+                {
+                    mechanics = mechanics.Where(m => m.NIF != null && m.NIF.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+                else
+                {
+                    mechanics = mechanics.Where(m => m.FullName.StartsWith(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["CurrentSearchType"] = searchType;
+
+            return View(mechanics.OrderBy(m => m.FullName));
         }
 
+        /// <summary>
+        /// Displays the edit form for a mechanic, including specialties and schedules.
+        /// </summary>
+        /// <param name="id">The mechanic's user ID.</param>
+        /// <returns>The edit mechanic view or not found.</returns>
         // GET: Mechanics/Edit/5
         public async Task<IActionResult> Edit(string id)
         {
@@ -67,6 +101,11 @@ namespace OficinaMVC.Controllers
             return View(viewModel);
         }
 
+        /// <summary>
+        /// Handles mechanic edit POST requests.
+        /// </summary>
+        /// <param name="model">The mechanic edit view model.</param>
+        /// <returns>Redirects on success or returns the view with errors.</returns>
         // POST: Mechanics/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]

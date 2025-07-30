@@ -8,6 +8,9 @@ using OficinaMVC.Hubs;
 
 namespace OficinaMVC.Services
 {
+    /// <summary>
+    /// Service for managing and completing repairs, including notifications and email alerts.
+    /// </summary>
     public class RepairService : IRepairService
     {
         private readonly IRepairRepository _repairRepository;
@@ -16,6 +19,14 @@ namespace OficinaMVC.Services
         private readonly IViewRendererService _viewRenderer;
         private readonly DataContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RepairService"/> class.
+        /// </summary>
+        /// <param name="repairRepository">The repair repository.</param>
+        /// <param name="notificationHub">The SignalR notification hub context.</param>
+        /// <param name="mailHelper">The mail helper for sending emails.</param>
+        /// <param name="viewRenderer">The view renderer for email templates.</param>
+        /// <param name="context">The database context.</param>
         public RepairService(
             IRepairRepository repairRepository,
             IHubContext<NotificationHub, INotificationClient> notificationHub,
@@ -30,6 +41,7 @@ namespace OficinaMVC.Services
             _context = context;
         }
 
+        /// <inheritdoc />
         public async Task<IEnumerable<Repair>> GetFilteredRepairsAsync(string status, string clientName, DateTime? startDate, DateTime? endDate)
         {
             var query = _context.Repairs
@@ -37,7 +49,7 @@ namespace OficinaMVC.Services
                 .Include(r => r.Vehicle).ThenInclude(v => v.Owner)
                 .AsQueryable();
 
-            var effectiveStatus = status ?? "Ongoing";
+            var effectiveStatus = status ?? "All";
             if (effectiveStatus != "All")
             {
                 query = query.Where(r => r.Status == effectiveStatus);
@@ -55,9 +67,13 @@ namespace OficinaMVC.Services
                 query = query.Where(r => r.StartDate.Date <= endDate.Value.Date);
             }
 
-            return await query.OrderByDescending(r => r.StartDate).ToListAsync();
+            return await query
+                .OrderBy(r => r.Status == "Ongoing" ? 1 : 2)
+                .ThenByDescending(r => r.StartDate)
+                .ToListAsync();
         }
 
+        /// <inheritdoc />
         public async Task<Repair> CompleteRepairAsync(int repairId)
         {
             var repair = await _repairRepository.GetByIdWithDetailsAsync(repairId);
@@ -67,7 +83,7 @@ namespace OficinaMVC.Services
             }
 
             repair.Status = "Completed";
-            repair.EndDate = DateTime.Now;
+            repair.EndDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             await SendCompletionNotificationsAsync(repair);
@@ -75,6 +91,10 @@ namespace OficinaMVC.Services
             return repair;
         }
 
+        /// <summary>
+        /// Sends notifications and an email when a repair is completed.
+        /// </summary>
+        /// <param name="repair">The completed repair entity.</param>
         private async Task SendCompletionNotificationsAsync(Repair repair)
         {
             var clientMessage = $"Good news! The repair on your vehicle ({repair.Vehicle.LicensePlate}) is complete.";

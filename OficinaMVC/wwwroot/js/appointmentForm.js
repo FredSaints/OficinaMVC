@@ -1,4 +1,10 @@
-﻿$(document).ready(function () {
+﻿/**
+ * Handles appointment form validation, dynamic dropdowns, and mechanic availability for create/edit pages.
+ * Integrates with flatpickr for date selection and uses AJAX for dynamic data.
+ *
+ * Dependencies: jQuery, flatpickr
+ */
+$(document).ready(function () {
     // --- Get all the form elements ---
     const clientSelect = $('#ClientId');
     const vehicleSelect = $('#VehicleId');
@@ -10,32 +16,33 @@
     let unavailableDates = [];
 
     // --- Core Logic: Function to check if the form is valid to be submitted ---
+    /**
+     * Checks if the form is valid and enables/disables the submit button accordingly.
+     * Considers required fields for both create and edit pages.
+     */
     function checkFormValidity() {
-        // This function determines if the submit button should be enabled.
         const isCreatePage = clientSelect.length > 0;
-
-        // Common conditions for both pages
         const dateSelected = appointmentDateInput.val() !== '';
         const serviceSelected = serviceTypeSelect.val() !== '' && serviceTypeSelect.val() !== '0';
         const mechanicSelected = mechanicSelect.val() !== '' && !mechanicSelect.prop('disabled');
-
         let isFormValid = false;
-
         if (isCreatePage) {
-            // On Create page, we also need a client and vehicle
             const clientSelected = clientSelect.val() !== '';
             const vehicleSelected = vehicleSelect.val() !== '' && !vehicleSelect.prop('disabled');
             isFormValid = clientSelected && vehicleSelected && dateSelected && serviceSelected && mechanicSelected;
         } else {
-            // On Edit page, client and vehicle are static, so we only check the others
             isFormValid = dateSelected && serviceSelected && mechanicSelected;
         }
-
-        // Enable or disable the button based on the result
         submitButton.prop('disabled', !isFormValid);
     }
 
     // --- Date Picker Logic (flatpickr) ---
+    /**
+     * Fetches unavailable appointment days for the given month/year and updates the unavailableDates array.
+     * @param {number} year - The year to fetch unavailable days for.
+     * @param {number} month - The month (0-based) to fetch unavailable days for.
+     * @param {function} [callback] - Optional callback to run after data is loaded.
+     */
     function fetchUnavailableDays(year, month, callback) {
         $.getJSON(`/Appointment/GetUnavailableDays?year=${year}&month=${month + 1}`, function (data) {
             unavailableDates = data;
@@ -43,6 +50,7 @@
         });
     }
 
+    // --- Date Picker Initialization ---
     flatpickr("#AppointmentDate", {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
@@ -61,11 +69,14 @@
     });
 
     // --- AJAX Function to fetch mechanics ---
+    /**
+     * Fetches available mechanics for the selected appointment date and updates the dropdown.
+     * Also checks form validity after loading.
+     */
     function fetchAvailableMechanics() {
         const appointmentDate = appointmentDateInput.val();
         mechanicSelect.empty().append('<option value="">Loading...</option>').prop('disabled', true);
         mechanicSpinner.show();
-
         $.getJSON(`/Appointment/GetAvailableMechanics?appointmentDate=${appointmentDate}`)
             .done(function (data) {
                 mechanicSelect.empty();
@@ -84,11 +95,13 @@
             })
             .always(function () {
                 mechanicSpinner.hide();
-                // After the call is complete, always check the form's validity
                 checkFormValidity();
             });
     }
 
+    // --- Event Handlers ---
+
+    // Any time a key dropdown changes, check the form validity
     // --- Event Handlers ---
 
     // Any time a key dropdown changes, check the form validity
@@ -103,11 +116,13 @@
 
     // Event handlers specific to the Create page
     if (clientSelect.length) {
+        /**
+         * Handles client selection change: loads vehicles and disables submit until valid.
+         */
         clientSelect.on('change', function () {
             const clientId = $(this).val();
             vehicleSelect.empty().append('<option value="">Loading...</option>').prop('disabled', true);
-            checkFormValidity(); // Check validity to disable button
-
+            checkFormValidity();
             if (clientId) {
                 $.getJSON(`/Appointment/GetVehiclesByClient?clientId=${clientId}`)
                     .done(function (data) {
@@ -126,6 +141,9 @@
             }
         });
 
+        /**
+         * Handles vehicle selection change: checks form validity.
+         */
         vehicleSelect.on('change', checkFormValidity);
     }
 

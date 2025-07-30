@@ -1,17 +1,19 @@
 ﻿@model OficinaMVC.Models.Mechanics.MechanicEditViewModel
 @{
-    ViewData["Title"] = "Edit Mechanic";
+    ViewData["Title"] = "Edit Staff Settings";
     var daysOfWeek = Enum.GetNames(typeof(DayOfWeek));
 }
 
-<h2 class="mt-4 mb-4 text-primary">
-    <i class="bi bi-person-gear me-2"></i> Edit Mechanic
-</h2>
-
 <div class="row justify-content-center">
-    <div class="col-lg-7 col-xl-6">
+    <div class="col-lg-8 col-xl-7">
 
-        <!-- Mechanic Profile Card -->
+        <div class="text-center mt-4 mb-3">
+            <h2 class="mb-0 text-primary">
+                <i class="bi bi-person-gear me-2"></i>@ViewData["Title"]
+            </h2>
+            <p class="text-muted">Manage settings for @Model.FullName</p>
+        </div>
+
         <div class="card shadow mb-4 border-0">
             <div class="card-body d-flex align-items-center">
                 <img src="@(!string.IsNullOrEmpty(Model.ProfileImageUrl) ? Model.ProfileImageUrl : "/images/default-profile.png")"
@@ -24,7 +26,6 @@
             </div>
         </div>
 
-        <!-- Success Message -->
         @if (TempData["SuccessMessage"] != null)
         {
             <div class="alert alert-success d-flex align-items-center mb-3">
@@ -34,11 +35,12 @@
         }
 
         <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Specialties & Schedule</h5>
+            </div>
             <div class="card-body p-4">
                 <form asp-action="Edit" method="post" autocomplete="off">
                     @Html.AntiForgeryToken()
-                    
-                    <!-- THE FIX IS HERE: Hidden fields to post back values that are not form inputs -->
                     <input type="hidden" asp-for="UserId" />
                     <input type="hidden" asp-for="FullName" />
                     <input type="hidden" asp-for="ProfileImageUrl" />
@@ -51,14 +53,14 @@
                         <div class="row">
                             @foreach (var specialty in Model.AvailableSpecialties)
                             {
-                                <div class="col-12 col-md-6 col-lg-4">
-                                    <div class="form-check mb-2">
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check form-check-inline mb-2">
                                         <input type="checkbox"
                                                class="form-check-input"
                                                id="spec_@specialty.Id"
                                                name="SelectedSpecialtyIds"
                                                value="@specialty.Id"
-                                               @(Model.SelectedSpecialtyIds.Contains(specialty.Id) ? "checked=\"checked\"" : "") />
+                                               @(Model.SelectedSpecialtyIds.Contains(specialty.Id) ? "checked" : "") />
                                         <label class="form-check-label" for="spec_@specialty.Id">
                                             @specialty.Name
                                         </label>
@@ -74,72 +76,58 @@
                             <i class="bi bi-calendar-week text-primary me-1"></i> Weekly Schedule
                         </label>
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle mb-0 shadow-sm" id="scheduleTable">
+                            <table class="table table-bordered align-middle mb-0" id="scheduleTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width:32%"><i class="bi bi-calendar-day"></i> Day</th>
-                                        <th style="width:28%"><i class="bi bi-clock"></i> Start</th>
-                                        <th style="width:28%"><i class="bi bi-clock-history"></i> End</th>
-                                        <th style="width:12%"></th>
+                                        <th>Day</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                @if (Model.Schedules != null && Model.Schedules.Any())
-                                {
-                                    for (int i = 0; i < Model.Schedules.Count; i++)
+                                    @if (Model.Schedules != null && Model.Schedules.Any())
                                     {
-                                        <tr>
-                                            <td>
-                                                <select name="Schedules[@i].DayOfWeek" class="form-select" required>
-                                                    @{
-                                                        foreach (var day in daysOfWeek)
+                                        for (int i = 0; i < Model.Schedules.Count; i++)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <select name="Schedules[@i].DayOfWeek" class="form-select" required>
+                                                        @foreach (var day in daysOfWeek)
                                                         {
-                                                            var selected = Model.Schedules[i].DayOfWeek.ToString() == day ? "selected" : "";
-                                                            @:<option value="@day" @selected>@day</option>
+                                                            <option value="@day" selected="@(Model.Schedules[i].DayOfWeek.ToString() == day)">@day</option>
                                                         }
-                                                    }
-                                                </select>
-                                                <input type="hidden" name="Schedules[@i].Id" value="@Model.Schedules[i].Id" />
-                                            </td>
-                                            <td>
-                                                <input type="time" name="Schedules[@i].StartTime"
-                                                       class="form-control" required
-                                                       value="@Model.Schedules[i].StartTime.ToString(@"hh\:mm")" />
-                                            </td>
-                                            <td>
-                                                <input type="time" name="Schedules[@i].EndTime"
-                                                       class="form-control" required
-                                                       value="@Model.Schedules[i].EndTime.ToString(@"hh\:mm")" />
-                                            </td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-link text-danger p-0 remove-row" title="Remove">
-                                                    <i class="bi bi-trash fs-5"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                                    </select>
+                                                    <input type="hidden" name="Schedules[@i].Id" value="@Model.Schedules[i].Id" />
+                                                </td>
+                                                <td><input type="time" name="Schedules[@i].StartTime" class="form-control" required value="@Model.Schedules[i].StartTime.ToString(@"hh\:mm")" /></td>
+                                                <td><input type="time" name="Schedules[@i].EndTime" class="form-control" required value="@Model.Schedules[i].EndTime.ToString(@"hh\:mm")" /></td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger p-1 remove-row" title="Remove">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
                                     }
-                                }
                                 </tbody>
                             </table>
                         </div>
                         <div class="mt-2">
-                            <button type="button" id="addRowBtn" class="btn btn-outline-success btn-sm">
+                            <button type="button" id="addRowBtn" class="btn btn-sm btn-outline-success">
                                 <i class="bi bi-plus-circle"></i> Add Slot
                             </button>
                         </div>
-                        <small class="text-muted">
-                            Set one or more available working periods. You can add or remove as needed.
-                        </small>
+                        <small class="text-muted">Set one or more available working periods.</small>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="d-flex justify-content-end mb-2">
-                        <button type="submit" class="btn btn-success me-2 px-4">
-                            <i class="bi bi-check-circle"></i> Save
-                        </button>
-                        <a asp-action="Index" class="btn btn-secondary px-4">
+                    <div class="d-flex justify-content-end mt-4">
+                        <a asp-action="Index" class="btn btn-secondary btn-lg me-2">
                             <i class="bi bi-arrow-left"></i> Back to list
                         </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Save Changes
+                        </button>
                     </div>
                 </form>
             </div>
@@ -149,75 +137,36 @@
 
 @section Scripts {
     <script>
-        // Use vanilla JS only
-        let scheduleIndex = @(Model.Schedules?.Count ?? 0);
-        const daysOfWeek = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(daysOfWeek));
+        document.addEventListener('DOMContentLoaded', function() {
+            let scheduleIndex = @(Model.Schedules?.Count ?? 0);
+            const daysOfWeek = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(daysOfWeek));
+            const tableBody = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
 
-        document.getElementById('addRowBtn').addEventListener('click', function () {
-            const table = document.getElementById('scheduleTable').getElementsByTagName('tbody')[0];
-            let row = document.createElement('tr');
+            function addRow() {
+                const newRow = tableBody.insertRow();
+                newRow.innerHTML = `
+                    <td>
+                        <select name="Schedules[${scheduleIndex}].DayOfWeek" class="form-select" required>
+                            ${daysOfWeek.map(day => `<option value="${day}">${day}</option>`).join('')}
+                        </select>
+                        <input type="hidden" name="Schedules[${scheduleIndex}].Id" value="0" />
+                    </td>
+                    <td><input type="time" name="Schedules[${scheduleIndex}].StartTime" class="form-control" required /></td>
+                    <td><input type="time" name="Schedules[${scheduleIndex}].EndTime" class="form-control" required /></td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger p-1 remove-row" title="Remove">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>`;
+                scheduleIndex++;
+            }
 
-            // Day select
-            let daySelect = document.createElement('select');
-            daySelect.name = `Schedules[${scheduleIndex}].DayOfWeek`;
-            daySelect.className = 'form-select';
-            daySelect.required = true;
-            daysOfWeek.forEach(function (day) {
-                let opt = document.createElement('option');
-                opt.value = day;
-                opt.text = day;
-                daySelect.appendChild(opt);
-            });
+            document.getElementById('addRowBtn').addEventListener('click', addRow);
 
-            let dayTd = document.createElement('td');
-            dayTd.appendChild(daySelect);
-
-            // Start Time
-            let startInput = document.createElement('input');
-            startInput.type = 'time';
-            startInput.name = `Schedules[${scheduleIndex}].StartTime`;
-            startInput.className = 'form-control';
-            startInput.required = true;
-
-            let startTd = document.createElement('td');
-            startTd.appendChild(startInput);
-
-            // End Time
-            let endInput = document.createElement('input');
-            endInput.type = 'time';
-            endInput.name = `Schedules[${scheduleIndex}].EndTime`;
-            endInput.className = 'form-control';
-            endInput.required = true;
-
-            let endTd = document.createElement('td');
-            endTd.appendChild(endInput);
-
-            // Remove button
-            let removeTd = document.createElement('td');
-            removeTd.className = 'text-center';
-            let removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.className = 'btn btn-link text-danger p-0 remove-row';
-            removeBtn.title = 'Remove';
-            removeBtn.innerHTML = '<i class="bi bi-trash fs-5"></i>';
-            removeBtn.onclick = function () {
-                row.remove();
-            };
-            removeTd.appendChild(removeBtn);
-
-            row.appendChild(dayTd);
-            row.appendChild(startTd);
-            row.appendChild(endTd);
-            row.appendChild(removeTd);
-
-            table.appendChild(row);
-            scheduleIndex++;
-        });
-
-        // Remove row handler for initial rows
-        document.querySelectorAll('.remove-row').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                this.closest('tr').remove();
+            tableBody.addEventListener('click', function(e) {
+                if (e.target && e.target.closest('.remove-row')) {
+                    e.target.closest('tr').remove();
+                }
             });
         });
     </script>

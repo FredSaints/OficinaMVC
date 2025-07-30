@@ -4,28 +4,91 @@ using OficinaMVC.Data.Entities;
 
 namespace OficinaMVC.Data
 {
+    /// <summary>
+    /// Represents the Entity Framework database context for the application, including all DbSet properties for entities.
+    /// </summary>
     public class DataContext : IdentityDbContext<User>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataContext"/> class.
+        /// </summary>
+        /// <param name="options">The options to be used by a <see cref="DbContext"/>.</param>
         public DataContext(DbContextOptions<DataContext> options)
             : base(options)
         {
         }
 
+        /// <summary>
+        /// Gets or sets the vehicles in the system.
+        /// </summary>
         public DbSet<Vehicle> Vehicles { get; set; }
+
+        /// <summary>
+        /// Gets or sets the appointments in the system.
+        /// </summary>
         public DbSet<Appointment> Appointments { get; set; }
+
+        /// <summary>
+        /// Gets or sets the repairs in the system.
+        /// </summary>
         public DbSet<Repair> Repairs { get; set; }
+
+        /// <summary>
+        /// Gets or sets the specialties in the system.
+        /// </summary>
         public DbSet<Specialty> Specialties { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user-specialty relationships in the system.
+        /// </summary>
         public DbSet<UserSpecialty> UserSpecialties { get; set; }
+
+        /// <summary>
+        /// Gets or sets the schedules in the system.
+        /// </summary>
         public DbSet<Schedule> Schedules { get; set; }
+
+        /// <summary>
+        /// Gets or sets the repair types in the system.
+        /// </summary>
         public DbSet<RepairType> RepairTypes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the car brands in the system.
+        /// </summary>
         public DbSet<Brand> Brands { get; set; }
+
+        /// <summary>
+        /// Gets or sets the car models in the system.
+        /// </summary>
         public DbSet<CarModel> CarModels { get; set; }
+
+        /// <summary>
+        /// Gets or sets the parts in the system.
+        /// </summary>
         public DbSet<Part> Parts { get; set; }
+
+        /// <summary>
+        /// Gets or sets the repair-part relationships in the system.
+        /// </summary>
         public DbSet<RepairPart> RepairParts { get; set; }
+
+        /// <summary>
+        /// Gets or sets the invoices in the system.
+        /// </summary>
         public DbSet<Invoice> Invoices { get; set; }
+
+        /// <summary>
+        /// Gets or sets the invoice items in the system.
+        /// </summary>
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
 
+        /// <summary>
+        /// Configures the entity relationships, indexes, and behaviors for the database model using the Entity Framework Fluent API.
+        /// This method customizes table mappings, sets up keys, relationships, delete behaviors, and precision for properties.
+        /// </summary>
+        /// <param name="modelBuilder">The builder used to construct the model for the context.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

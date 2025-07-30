@@ -1,7 +1,7 @@
-﻿@model OficinaMVC.Models.LoginViewModel
+﻿@model OficinaMVC.Models.Accounts.LoginViewModel
 @{
     ViewData["Title"] = "Login";
-    Layout = null; // Use a null layout for a custom full-page design
+    Layout = null;
 }
 
 <!DOCTYPE html>
@@ -13,16 +13,38 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <style>
+        .login-card-body {
+            padding: 4rem !important;
+        }
+
+            .login-card-body .card-title {
+                font-size: 2.5rem;
+            }
+
+            .login-card-body .form-control,
+            .login-card-body .form-floating > label {
+                font-size: 1.25rem;
+                padding-top: 1.5rem;
+                padding-bottom: 1.5rem;
+                height: calc(4.5rem + 2px);
+            }
+
+            .login-card-body .btn-lg {
+                font-size: 1.5rem;
+                padding: 1rem 1.5rem;
+            }
+    </style>
 </head>
 <body>
 
     <div class="auth-container">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-8 col-xl-7">
+                <div class="col-lg-10 col-xl-9">
                     <div class="card shadow-lg border-0 rounded-3">
                         <div class="row g-0">
-                            <!-- Image Column -->
                             <div class="col-md-5 d-none d-md-flex bg-primary rounded-start-3 align-items-center justify-content-center text-white p-5">
                                 <div class="text-center">
                                     <i class="bi bi-wrench-adjustable-circle-fill" style="font-size: 5rem;"></i>
@@ -30,9 +52,8 @@
                                     <p class="lead">Your trusted workshop partner.</p>
                                 </div>
                             </div>
-                            <!-- Form Column -->
                             <div class="col-md-7">
-                                <div class="card-body p-4 p-sm-5">
+                                <div class="card-body p-4 p-sm-5 login-card-body">
                                     <div class="text-center mb-4">
                                         <h3 class="card-title fw-bold">Member Login</h3>
                                         <p class="text-muted">Access your workshop dashboard.</p>
@@ -66,19 +87,12 @@
                                         </div>
                                     </form>
 
+                                    <hr class="my-4">
+
                                     <div class="text-center">
-                                        @if (User.IsInRole("Admin"))
-                                        {
-                                            <p class="small">
-                                                Need to create an account? <a asp-action="Register" class="text-decoration-none">Register new user</a>
-                                            </p>
-                                        }
-                                        else
-                                        {
-                                            <p class="small">
-                                                Don't have an account? Please contact an administrator.
-                                            </p>
-                                        }
+                                        <a asp-controller="Home" asp-action="Index" class="text-decoration-none">
+                                            <i class="bi bi-arrow-left-circle me-1"></i> Back to Homepage
+                                        </a>
                                     </div>
                                 </div>
                             </div>
